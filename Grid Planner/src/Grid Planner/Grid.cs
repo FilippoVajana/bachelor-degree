@@ -9,6 +9,7 @@ namespace Grid_Planner
     {
         int ManhattanDistance(Point p1, Point p2);
         Point[] GetNeighbors(Point p);
+        Point GetPoint(int x, int y);
     }
 
     public class Grid : IGrid
@@ -32,13 +33,29 @@ namespace Grid_Planner
         {
             if (isGridPoint(p))
             {
+                List<Point> neighbors = new List<Point>();
+                neighbors.Add(_grid[p.X + 1][p.Y]);
+                neighbors.Add(_grid[p.X - 1][p.Y]);
+                neighbors.Add(_grid[p.X][p.Y + 1]);
+                neighbors.Add(_grid[p.X][p.Y - 1]);
 
+                return neighbors.FindAll(x => isGridPoint(x)).ToArray();
             }
+            return null;
         }
 
         private bool isGridPoint(Point p)
         {
             return (0 <= p.X && p.X < _sizeX) && (0 <= p.Y && p.Y < _sizeY);
+        }
+
+        public Point GetPoint(int x, int y)
+        {
+            if (isGridPoint(new Point(x, y)))
+            {
+                return _grid[x][y];
+            }
+            return null;
         }
     }
 
@@ -82,5 +99,10 @@ namespace Grid_Planner
             }
         }
 
+        public Point(int x, int y)
+        {
+            X = x;
+            Y = y;
+        }
     }
 }
