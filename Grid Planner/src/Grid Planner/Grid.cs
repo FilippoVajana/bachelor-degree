@@ -7,15 +7,16 @@ namespace Grid_Planner
 {
     interface IGrid
     {
-        int ManhattanDistance(Point p1, Point p2);
-        Point[] GetNeighbors(Point p);
-        Point GetPoint(int x, int y);
+        int Distance(APoint p1, APoint p2);
+        APoint[] GetNeighbors(APoint p);
+        APoint GetPoint(int x, int y);
+        String ToString();
     }
 
     public class Grid : IGrid
     {
         private int _sizeX, _sizeY;
-        private Point[][] _grid;
+        private SARPoint[][] _grid;
 
         public Grid(int sizeX, int sizeY)
         {
@@ -24,16 +25,16 @@ namespace Grid_Planner
             //_grid = BuildGrid();
         }
 
-        public int ManhattanDistance(Point p1, Point p2)
+        public int Distance(APoint p1, APoint p2)
         {
             return (Math.Abs(p1.X - p2.X) + Math.Abs(p1.Y - p2.Y));
         }
 
-        public Point[] GetNeighbors(Point p)
+        public APoint[] GetNeighbors(APoint p)
         {
             if (isGridPoint(p))
             {
-                List<Point> neighbors = new List<Point>();
+                List<APoint> neighbors = new List<APoint>();
                 neighbors.Add(_grid[p.X + 1][p.Y]);
                 neighbors.Add(_grid[p.X - 1][p.Y]);
                 neighbors.Add(_grid[p.X][p.Y + 1]);
@@ -44,65 +45,131 @@ namespace Grid_Planner
             return null;
         }
 
-        private bool isGridPoint(Point p)
+        private bool isGridPoint(APoint p)
         {
             return (0 <= p.X && p.X < _sizeX) && (0 <= p.Y && p.Y < _sizeY);
         }
 
-        public Point GetPoint(int x, int y)
+        public APoint GetPoint(int x, int y)
         {
-            if (isGridPoint(new Point(x, y)))
+            if (isGridPoint(new SARPoint(x, y)))
             {
                 return _grid[x][y];
             }
             return null;
         }
-    }
 
+        override public string ToString()
+        {
+            //  row = Y
+            //  ^
+            //  |
+            //  |
+            //  |
+            //  ----------> col = X
+
+            if (_grid != null)
+            {
+                for (int row = 0; row < _sizeY; row++)
+                {
+                    for (int col = 0; col < _sizeX; col++)
+                    {
+                        _grid[row][col].ToString();
+                    }
+                }
+            }
+            return null;
+        }
+    }
+    
     /// <summary>
     /// Schema for Grid point object
     /// </summary>
-    public class Point
+    public abstract class APoint
     {
         public int X { get; set; }
         public int Y { get; set; }
 
-        private int dangerLevel;
-        public int Danger
-        {
-            get
-            {
-                return dangerLevel;
-            }
-            set
-            {
-                if (0 <= value && value <= 10 )
-                {
-                    dangerLevel = value;
-                }
-            }
-        }
-
-        private int confidenceLevel;
-        public int Confidence
-        {
-            get
-            {
-                return confidenceLevel;
-            }
-            set
-            {
-                if (0 <= value && value <= 10)
-                {
-                    confidenceLevel = value;
-                }
-            }
-        }
-
-        public Point(int x, int y)
+        public APoint(int x, int y)
         {
             X = x;
             Y = y;
         }
     }
+
+    public class SARPoint : APoint
+    {
+        public enum PointType { Obstacle, Target, Clear }
+        public SARPoint(int x, int y) : base(x, y)
+        {
+            Type = PointType.Clear;
+            Danger = 0;
+            Confidence = 0;
+        }
+                
+        private PointType _type;
+        public PointType Type
+        {
+            get
+            {
+                return _type;
+            }
+            set
+            {
+                if (value == PointType.Clear || value == PointType.Obstacle || value == PointType.Target)
+                {
+                    _type = value;
+                }                
+            }
+        }
+
+        private int _dangerLevel;
+        public int Danger
+        {
+            get
+            {
+                return _dangerLevel;
+            }
+            set
+            {
+                if (0 <= value && value <= 10)
+                {
+                    _dangerLevel = value;
+                }
+            }
+        }
+
+        private int _confidenceLevel;
+        public int Confidence
+        {
+            get
+            {
+                return _confidenceLevel;
+            }
+            set
+            {
+                if (0 <= value && value <= 10)
+                {
+                    _confidenceLevel = value;
+                }
+            }
+        }
+
+        override public String ToString()
+        {
+            switch (Type)
+            {
+                case PointType.Obstacle:
+                    return "#";
+                    //break;
+                case PointType.Target:
+                    return "$";
+                    //break;                
+                default:
+                    return " ";
+                    //break;
+            }
+        }
+    }
+
 }
