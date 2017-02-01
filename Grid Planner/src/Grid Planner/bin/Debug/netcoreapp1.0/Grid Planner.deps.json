@@ -6,7 +6,7 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v1.0": {
-      "Grid Planner/1.0.0": {
+      "grid planner/1.0.0": {
         "runtime": {
           "Grid Planner.dll": {}
         }
@@ -14,7 +14,7 @@
     }
   },
   "libraries": {
-    "Grid Planner/1.0.0": {
+    "grid planner/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

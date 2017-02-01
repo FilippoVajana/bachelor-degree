@@ -11,18 +11,38 @@ namespace Grid_Planner
         APoint[] GetNeighbors(APoint p);
         APoint GetPoint(int x, int y);
         String ToString();
+        void Randomize(int seed, int iterations);
     }
 
     public class Grid : IGrid
     {
-        private int _sizeX, _sizeY;
-        private SARPoint[][] _grid;
+        //  row = Y
+        //  ^
+        //  |
+        //  |
+        //  |
+        //  ----------> col = X
 
-        public Grid(int sizeX, int sizeY)
+        //{ a a a a a a }
+        //{ a b b b b a }
+        //{ a a c c c c }
+
+        private int _sizeCol, _sizeRow;
+        private SARPoint[,] _grid;
+
+        public Grid(int columns, int rows)
         {
-            _sizeX = sizeX;
-            _sizeY = sizeY;
-            //_grid = BuildGrid();
+            _sizeCol = columns;
+            _sizeRow = rows;
+            _grid = new SARPoint[_sizeRow, _sizeCol]; //riga X colonna
+
+            for (int row = 0; row < _sizeRow; row++)
+            {
+                for (int col = 0; col < _sizeCol; col++)
+                {                    
+                    _grid[row, col] = new SARPoint(row, col);
+                }
+            }
         }
 
         public int Distance(APoint p1, APoint p2)
@@ -36,10 +56,10 @@ namespace Grid_Planner
             {
                 List<APoint> neighbors = new List<APoint>
                 {
-                    _grid[p.X + 1][p.Y],
-                    _grid[p.X - 1][p.Y],
-                    _grid[p.X][p.Y + 1],
-                    _grid[p.X][p.Y - 1]
+                    _grid[p.X + 1,p.Y],
+                    _grid[p.X - 1,p.Y],
+                    _grid[p.X,p.Y + 1],
+                    _grid[p.X,p.Y - 1]
                 };
                 return neighbors.FindAll(x => isGridPoint(x)).ToArray();
             }
@@ -48,38 +68,48 @@ namespace Grid_Planner
 
         private bool isGridPoint(APoint p)
         {
-            return (0 <= p.X && p.X < _sizeX) && (0 <= p.Y && p.Y < _sizeY);
+            return (0 <= p.X && p.X < _sizeCol) && (0 <= p.Y && p.Y < _sizeRow);
         }
 
-        public APoint GetPoint(int x, int y)
+        public APoint GetPoint(int row, int col)
         {
-            if (isGridPoint(new SARPoint(x, y)))
+            if (isGridPoint(new SARPoint(row, col)))
             {
-                return _grid[x][y];
+                return _grid[row,col];
             }
             return null;
         }
 
         override public string ToString()
         {
-            //  row = Y
-            //  ^
-            //  |
-            //  |
-            //  |
-            //  ----------> col = X
+            string gridString = "";
 
             if (_grid != null)
             {
-                for (int row = 0; row < _sizeY; row++)
+                for (int row = 0; row < _sizeRow; row++)
                 {
-                    for (int col = 0; col < _sizeX; col++)
+                    gridString += "\t\t";
+                    for (int col = 0; col < _sizeCol; col++)
                     {
-                        _grid[row][col].ToString();
+                        gridString += String.Format("{0} ", _grid[row, col].ToString());
                     }
+                    gridString += "\n";
                 }
             }
-            return null;
+            return gridString;
+        }
+        
+        public void Randomize(int seed, int iterations)
+        {            
+            Random rnd = new Random(seed);
+            int iterCount = 0;
+            var types = Enum.GetValues(typeof(SARPoint.PointType));
+
+            while (iterCount < iterations)
+            {
+                _grid[rnd.Next(_sizeRow), rnd.Next(_sizeCol)].Type = (SARPoint.PointType) rnd.Next(types.Length);
+                iterCount++;
+            }
         }
     }
     
@@ -107,7 +137,7 @@ namespace Grid_Planner
             Danger = 0;
             Confidence = 0;
         }
-                
+        
         private PointType _type;
         public PointType Type
         {
@@ -167,7 +197,7 @@ namespace Grid_Planner
                     return "$";
                     //break;                
                 default:
-                    return " ";
+                    return "%";
                     //break;
             }
         }
