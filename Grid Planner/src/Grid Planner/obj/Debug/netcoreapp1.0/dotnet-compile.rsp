@@ -1,5 +1,5 @@
---temp-output:C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\src\Grid Planner\obj\Debug\netcoreapp1.0\
---out:C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\src\Grid Planner\bin\Debug\netcoreapp1.0\Grid Planner.dll
+--temp-output:c:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\src\Grid Planner\obj\Debug\netcoreapp1.0\
+--out:c:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\src\Grid Planner\bin\Debug\netcoreapp1.0\Grid Planner.dll
 --define:DEBUG
 --define:TRACE
 --define:NETCOREAPP1_0
@@ -86,5 +86,6 @@
 --reference:C:\Users\filip\.nuget\packages\System.Threading.Timer\4.0.1\ref\netstandard1.2\System.Threading.Timer.dll
 --reference:C:\Users\filip\.nuget\packages\System.Xml.ReaderWriter\4.0.11\ref\netstandard1.3\System.Xml.ReaderWriter.dll
 --reference:C:\Users\filip\.nuget\packages\System.Xml.XDocument\4.0.11\ref\netstandard1.3\System.Xml.XDocument.dll
-C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\src\Grid Planner\Program.cs
-C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\src\Grid Planner\Properties\AssemblyInfo.cs
+c:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\src\Grid Planner\Grid.cs
+c:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\src\Grid Planner\Program.cs
+c:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\src\Grid Planner\Properties\AssemblyInfo.cs

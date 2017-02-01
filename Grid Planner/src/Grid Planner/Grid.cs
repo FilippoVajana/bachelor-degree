@@ -34,12 +34,13 @@ namespace Grid_Planner
         {
             if (isGridPoint(p))
             {
-                List<APoint> neighbors = new List<APoint>();
-                neighbors.Add(_grid[p.X + 1][p.Y]);
-                neighbors.Add(_grid[p.X - 1][p.Y]);
-                neighbors.Add(_grid[p.X][p.Y + 1]);
-                neighbors.Add(_grid[p.X][p.Y - 1]);
-
+                List<APoint> neighbors = new List<APoint>
+                {
+                    _grid[p.X + 1][p.Y],
+                    _grid[p.X - 1][p.Y],
+                    _grid[p.X][p.Y + 1],
+                    _grid[p.X][p.Y - 1]
+                };
                 return neighbors.FindAll(x => isGridPoint(x)).ToArray();
             }
             return null;

@@ -7,8 +7,8 @@
 -debug:full
 -nostdlib
 -nologo
-"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\src\Grid Planner\obj\Debug\netcoreapp1.0\dotnet-compile.assemblyinfo.cs"
--out:"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\src\Grid Planner\bin\Debug\netcoreapp1.0\Grid Planner.dll"
+"c:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\src\Grid Planner\obj\Debug\netcoreapp1.0\dotnet-compile.assemblyinfo.cs"
+-out:"c:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\src\Grid Planner\bin\Debug\netcoreapp1.0\Grid Planner.dll"
 -r:"C:\Users\filip\.nuget\packages\Microsoft.CSharp\4.0.1\ref\netstandard1.0\Microsoft.CSharp.dll"
 -r:"C:\Users\filip\.nuget\packages\Microsoft.VisualBasic\10.0.1\ref\netstandard1.1\Microsoft.VisualBasic.dll"
 -r:"C:\Users\filip\.nuget\packages\Microsoft.Win32.Primitives\4.0.1\ref\netstandard1.3\Microsoft.Win32.Primitives.dll"
@@ -82,5 +82,6 @@
 -r:"C:\Users\filip\.nuget\packages\System.Threading.Timer\4.0.1\ref\netstandard1.2\System.Threading.Timer.dll"
 -r:"C:\Users\filip\.nuget\packages\System.Xml.ReaderWriter\4.0.11\ref\netstandard1.3\System.Xml.ReaderWriter.dll"
 -r:"C:\Users\filip\.nuget\packages\System.Xml.XDocument\4.0.11\ref\netstandard1.3\System.Xml.XDocument.dll"
-"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\src\Grid Planner\Program.cs"
-"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\src\Grid Planner\Properties\AssemblyInfo.cs"
+"c:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\src\Grid Planner\Grid.cs"
+"c:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\src\Grid Planner\Program.cs"
+"c:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\src\Grid Planner\Properties\AssemblyInfo.cs"
