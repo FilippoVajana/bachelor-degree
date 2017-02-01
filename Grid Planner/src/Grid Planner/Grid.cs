@@ -8,7 +8,7 @@ namespace Grid_Planner
     interface IGrid
     {
         int Distance(APoint p1, APoint p2);
-        APoint[] GetNeighbors(APoint p);
+        APoint[] GetNeighbors(int row, int col);
         APoint GetPoint(int x, int y);
         String ToString();
         void Randomize(int seed, int iterations);
@@ -50,18 +50,19 @@ namespace Grid_Planner
             return (Math.Abs(p1.X - p2.X) + Math.Abs(p1.Y - p2.Y));
         }
 
-        public APoint[] GetNeighbors(APoint p)
+        public APoint[] GetNeighbors(int row, int col)
         {
+            var p = new SARPoint(row, col);
             if (isGridPoint(p))
             {
                 List<APoint> neighbors = new List<APoint>
                 {
-                    _grid[p.X + 1,p.Y],
-                    _grid[p.X - 1,p.Y],
-                    _grid[p.X,p.Y + 1],
-                    _grid[p.X,p.Y - 1]
+                    GetPoint(p.X + 1,p.Y),
+                    GetPoint(p.X - 1,p.Y),
+                    GetPoint(p.X,p.Y + 1),
+                    GetPoint(p.X,p.Y - 1)
                 };
-                return neighbors.FindAll(x => isGridPoint(x)).ToArray();
+                return neighbors.FindAll(x => x != null).ToArray();
             }
             return null;
         }

@@ -15,7 +15,13 @@ namespace Grid_Planner
             grid.Randomize(10, 50);
             Console.WriteLine(grid.ToString());
 
-            Console.Write("Press Enter to exit");
+            var neighbors = grid.GetNeighbors(1, 1);
+            foreach (var n in neighbors)
+            {
+                Console.Write("{0}, ", n); 
+            }
+
+            Console.Write("\nPress Enter to exit");
             Console.ReadKey();
         }
     }
