@@ -14,7 +14,7 @@ namespace Grid_Planner
         void Randomize(int seed, int iterations);
     }
 
-    public class Grid : IGrid
+    public class SARGrid : IGrid
     {
         //  row = Y
         //  ^
@@ -30,7 +30,7 @@ namespace Grid_Planner
         private int _sizeCol, _sizeRow;
         private SARPoint[,] _grid;
 
-        public Grid(int columns, int rows)
+        public SARGrid(int columns, int rows)
         {
             _sizeCol = columns;
             _sizeRow = rows;
