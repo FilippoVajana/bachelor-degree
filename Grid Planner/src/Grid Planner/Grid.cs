@@ -9,7 +9,7 @@ namespace Grid_Planner
     {
         int Distance(APoint p1, APoint p2);
         APoint[] GetNeighbors(APoint point);
-        APoint GetPoint(int row, int column);
+        APoint GetPoint(int x, int y);
         String ToString();
         void Randomize(int seed, int iterations);
     }
@@ -71,11 +71,11 @@ namespace Grid_Planner
             return (0 <= p.X && p.X < _sizeCol) && (0 <= p.Y && p.Y < _sizeRow);
         }
 
-        public APoint GetPoint(int row, int col)
+        public APoint GetPoint(int x, int y)
         {
-            if (isGridPoint(new SARPoint(row, col)))
+            if (isGridPoint(new SARPoint(x, y)))
             {
-                return _grid[row,col];
+                return _grid[y,x];
             }
             return null;
         }
@@ -121,10 +121,10 @@ namespace Grid_Planner
         public int X { get; set; }
         public int Y { get; set; }
 
-        public APoint(int column, int row)
+        public APoint(int x, int y)
         {
-            X = column;
-            Y = row;
+            X = x;
+            Y = y;
         }
     }
 
