@@ -7,9 +7,9 @@ namespace Grid_Planner
 {
     interface IGrid
     {
-        int Distance(APoint p1, APoint p2);
-        APoint[] GetNeighbors(APoint point);
-        APoint GetPoint(int x, int y);
+        int Distance(GridPoint p1, GridPoint p2);
+        GridPoint[] GetNeighbors(GridPoint point);
+        GridPoint GetPoint(int x, int y);
         String ToString();
         void Randomize(int seed, int iterations);
     }
@@ -45,16 +45,16 @@ namespace Grid_Planner
             }
         }
 
-        public int Distance(APoint p1, APoint p2)
+        public int Distance(GridPoint p1, GridPoint p2)
         {
             return (Math.Abs(p1.X - p2.X) + Math.Abs(p1.Y - p2.Y));
         }
 
-        public APoint[] GetNeighbors(APoint p)
+        public GridPoint[] GetNeighbors(GridPoint p)
         {
             if (isGridPoint(p))
             {
-                List<APoint> neighbors = new List<APoint>
+                List<GridPoint> neighbors = new List<GridPoint>
                 {
                     GetPoint(p.X + 1,p.Y),
                     GetPoint(p.X - 1,p.Y),
@@ -66,12 +66,12 @@ namespace Grid_Planner
             return null;
         }
 
-        private bool isGridPoint(APoint p)
+        private bool isGridPoint(GridPoint p)
         {
             return (0 <= p.X && p.X < _sizeCol) && (0 <= p.Y && p.Y < _sizeRow);
         }
 
-        public APoint GetPoint(int x, int y)
+        public GridPoint GetPoint(int x, int y)
         {
             if (isGridPoint(new SARPoint(x, y)))
             {
@@ -116,19 +116,19 @@ namespace Grid_Planner
     /// <summary>
     /// Schema for Grid point object
     /// </summary>
-    public abstract class APoint
+    public class GridPoint
     {
         public int X { get; set; }
         public int Y { get; set; }
 
-        public APoint(int x, int y)
+        public GridPoint(int x, int y)
         {
             X = x;
             Y = y;
         }
     }
 
-    public class SARPoint : APoint
+    public class SARPoint : GridPoint
     {
         public enum PointType { Obstacle, Target, Clear }
         public SARPoint(int x, int y) : base(x, y)
