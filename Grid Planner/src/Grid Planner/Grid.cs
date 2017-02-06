@@ -121,10 +121,10 @@ namespace Grid_Planner
         public int X { get; set; }
         public int Y { get; set; }
 
-        public GridPoint(int x, int y)
+        public GridPoint(int column, int row)
         {
-            X = x;
-            Y = y;
+            X = column;
+            Y = row;
         }
     }
 
