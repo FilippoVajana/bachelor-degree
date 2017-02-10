@@ -10,7 +10,7 @@ namespace GridPlanner
 {
     public interface IHeuristic
     {
-        double EvaluateCost(GridPoint point, GridPoint goal);
+        double EvaluateCost(IPoint point, IPoint goal);
     }
 
     public interface IPlanningAction
@@ -20,28 +20,28 @@ namespace GridPlanner
 
     public interface IPlanner
     {
-        PlanningResult ComputePlan(GridPoint start, GridPoint goal, IHeuristic heuristic);
+        PlanningResult ComputePlan(IPoint start, IPoint goal, IHeuristic heuristic);
         bool SavePlan(PlanningResult plan);        
     }
 
     public class PlanningResult
     {
         private List<IPlanningAction> _plan;
-        private List<GridPoint> _path;
+        private List<IPoint> _path;
         private SearchLogger.SearchLog _log;
 
         public List<IPlanningAction> Plan { get { return _plan; } }
-        public List<GridPoint> Path { get { return _path; } }
+        public List<IPoint> Path { get { return _path; } }
         public SearchLogger.SearchLog ExecutionLog { get { return _log; } }
 
-        protected PlanningResult(List<GridPoint> path, SearchLogger logger)
+        protected PlanningResult(List<IPoint> path, SearchLogger logger)
         {
             _path = path;
             _log = logger.Log;
             _plan = ExtractPlan(_path);
         }
 
-        private List<IPlanningAction> ExtractPlan(List<GridPoint> path)
+        private List<IPlanningAction> ExtractPlan(List<IPoint> path)
         {
             throw new NotImplementedException();
         }
@@ -86,13 +86,13 @@ namespace GridPlanner
         /// </summary>
         protected class Node
         {
-            public GridPoint point;
+            public IPoint point;
             public double GCost { get; set; } //costo dall'origine
             public double FCost { get; set; } //costo aggregato g + h
 
             public Node(int column, int row)
             {
-                point = new GridPoint(column, row);
+                point = new SARPoint(column, row);
                 GCost = double.MaxValue;
                 FCost = 0;
             }
@@ -115,7 +115,7 @@ namespace GridPlanner
 
         
         
-        private List<GridPoint> FindPath(GridPoint start, GridPoint goal)
+        private List<IPoint> FindPath(IPoint start, IPoint goal)
         {
             List<Node> openNodes = new List<Node>();//nodi valutati
             List<Node> closedNodes = new List<Node>();//nodi valutati ed espansi
@@ -126,9 +126,9 @@ namespace GridPlanner
                 return (openNodes.Select(x => Tuple.Create(x, x.FCost))).Min().Item1;
             };
 
-            Func<Node, List<GridPoint>> _pathToPoint = delegate (Node endPoint)
+            Func<Node, List<IPoint>> _pathToPoint = delegate (Node endPoint)
             {
-                var path = new List<GridPoint>
+                var path = new List<IPoint>
                 {
                     endPoint.point
                 };
@@ -144,7 +144,7 @@ namespace GridPlanner
                 return path;
             };
 
-            Func<GridPoint, GridPoint, double> _distanceBetween = delegate (GridPoint p1, GridPoint p2)
+            Func<IPoint, IPoint, double> _distanceBetween = delegate (IPoint p1, IPoint p2)
             {
                 return Math.Abs(p1.X - p2.X) + Math.Abs(p1.Y - p2.Y);
             };
@@ -207,9 +207,9 @@ namespace GridPlanner
        
     class Move : IPlanningAction
     {
-        private GridPoint _start, _end;
+        private IPoint _start, _end;
 
-        public Move(GridPoint start, GridPoint end)
+        public Move(IPoint start, IPoint end)
         {
             _start = start;
             _end = end;

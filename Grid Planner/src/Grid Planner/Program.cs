@@ -12,7 +12,7 @@ namespace GridPlanner
             var grid = new SARGrid(20, 10); 
             Console.WriteLine(grid.ToString());
 
-            grid.Randomize(10, 50);
+            grid.BuildRandomGrid(10, 50);
             Console.WriteLine(grid.ToString());
 
             var neighbors = grid.GetNeighbors(new SARPoint(1,1));

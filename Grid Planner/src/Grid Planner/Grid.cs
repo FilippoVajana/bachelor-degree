@@ -5,13 +5,23 @@ using System.Threading.Tasks;
 
 namespace GridPlanner
 {
-    interface IGrid
+    /// <summary>
+    /// Schema for a generic two-dimensional point
+    /// </summary>
+    public interface IPoint
     {
-        int Distance(GridPoint p1, GridPoint p2);
-        GridPoint[] GetNeighbors(GridPoint point);
-        GridPoint GetPoint(int x, int y);
-        String ToString();
-        void Randomize(int seed, int iterations);
+        int X { get; set; }
+        int Y { get; set; }
+    }
+
+    /// <summary>
+    /// Schema for a generic two-dimensional grid
+    /// </summary>
+    public interface IGrid
+    {
+        int Distance(IPoint p1, IPoint p2);
+        IPoint[] GetNeighbors(IPoint point);        
+        void BuildRandomGrid(int seed, int iterations);
     }
 
     public class SARGrid : IGrid
@@ -45,35 +55,35 @@ namespace GridPlanner
             }
         }
 
-        public int Distance(GridPoint p1, GridPoint p2)
+        public int Distance(IPoint p1, IPoint p2)
         {
             return (Math.Abs(p1.X - p2.X) + Math.Abs(p1.Y - p2.Y));
         }
 
-        public GridPoint[] GetNeighbors(GridPoint p)
+        public IPoint[] GetNeighbors(IPoint p)
         {
-            if (IsGridPoint(p))
+            if (IsValidPoint(p))
             {
-                List<GridPoint> neighbors = new List<GridPoint>
+                List<SARPoint> neighbors = new List<SARPoint>
                 {
                     GetPoint(p.X + 1,p.Y),
                     GetPoint(p.X - 1,p.Y),
                     GetPoint(p.X,p.Y + 1),
                     GetPoint(p.X,p.Y - 1)
                 };
-                return neighbors.FindAll(x => x != null).ToArray();
+                return neighbors.FindAll(x => x != null && x.Type != SARPoint.PointType.Obstacle).ToArray();
             }
             return null;
         }
 
-        private bool IsGridPoint(GridPoint p)
+        private bool IsValidPoint(IPoint p)
         {
             return (0 <= p.X && p.X < _sizeCol) && (0 <= p.Y && p.Y < _sizeRow);
         }
 
-        public GridPoint GetPoint(int x, int y)
+        public SARPoint GetPoint(int x, int y)
         {
-            if (IsGridPoint(new SARPoint(x, y)))
+            if (IsValidPoint(new SARPoint(x, y)))
             {
                 return _grid[y,x];
             }
@@ -99,7 +109,7 @@ namespace GridPlanner
             return gridString;
         }
         
-        public void Randomize(int seed, int iterations)
+        public void BuildRandomGrid(int seed, int iterations)
         {            
             Random rnd = new Random(seed);
             int iterCount = 0;
@@ -113,25 +123,15 @@ namespace GridPlanner
         }
     }
     
-    /// <summary>
-    /// Schema for Grid point object
-    /// </summary>
-    public class GridPoint
-    {
-        public int X { get; set; }
-        public int Y { get; set; }
+    
 
-        public GridPoint(int column, int row)
-        {
-            X = column;
-            Y = row;
-        }
-    }
-
-    public class SARPoint : GridPoint
+    public class SARPoint : IPoint
     {
+        public int X { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public int Y { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
         public enum PointType { Obstacle, Target, Clear }
-        public SARPoint(int x, int y) : base(x, y)
+        public SARPoint(int x, int y)
         {
             Type = PointType.Clear;
             Danger = 0;
@@ -186,6 +186,7 @@ namespace GridPlanner
             }
         }
 
+        
         override public String ToString()
         {
             switch (Type)
