@@ -6,14 +6,31 @@ namespace GridPlanner.Toolbox
 {
     class TSPSolver
     {
-        private IGrid _env;
+        private SARGrid _env;
         private int _radius;
-        private List<GridPoint> _openNodes;
-        private List<GridPoint> _closedNodes;
-
-        public TSPSolver(IGrid environment, GridPoint start, int radius )
+        private List<IPoint> _openNodes; //da espandere
+        private List<IPoint> _closedNodes; //espansi
+        public TSPSolver(SARGrid environment, SARPoint start, int radius )
         {
+            //inizializzazione
+            _openNodes.Add(start);
+            int counter = radius;
 
+            //espansione della frontiera
+            while (_openNodes.Count > 0 && counter >= 0)
+            {
+                var tmpOpenNodes = new List<IPoint>(_openNodes);
+                foreach (var node in _openNodes)
+                {
+                    var neighbors = new List<IPoint>(_env.GetNeighbors(node));
+                    neighbors = neighbors.FindAll(x => !_closedNodes.Contains(x) && !_openNodes.Contains(x)); //rimuovo i nodi già visitati
+                    tmpOpenNodes.AddRange(neighbors);
+
+                    tmpOpenNodes.Remove(node);
+                    _closedNodes.Add(node); //chiudo il nodo
+                }
+                _openNodes = tmpOpenNodes;
+            }
         }
         ///Passi fondamentali
         ///1-esplorare area
@@ -30,9 +47,9 @@ namespace GridPlanner.Toolbox
         ///4-selezionare permutazione a costo minimo
         ///     -calcolo delle distanze reciproche
 
-        private List<GridPoint> ExpandNode(GridPoint node)
+        private IPoint[] ExpandNode(SARPoint node)
         {
-            return envi
+            return _env.GetNeighbors(node);
         }
 
         private class ListHandler
