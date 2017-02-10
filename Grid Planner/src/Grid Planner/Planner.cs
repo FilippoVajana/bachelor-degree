@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 
-namespace Grid_Planner
+namespace GridPlanner
 {
     public interface IHeuristic
     {
@@ -48,13 +48,9 @@ namespace Grid_Planner
     }   
 
     public class SearchLogger
-    {
-        public int LogState(object[] stateParams)
-        {
-            throw new NotImplementedException();
-        }
+    {        
 
-        public string SaveLogsHistory(string logsDirPath)
+        public string SaveToFile(string logsDirPath)
         {
             //definisco nome log
             string logName = $"{GetType().Name}_{DateTime.Now.ToUniversalTime()}";
@@ -86,7 +82,7 @@ namespace Grid_Planner
     public class Planner
     {
         /// <summary>
-        /// Rappresenta un punto dell'ambiente valutato durante la pianificazione
+        /// Rappresenta un nodo del grafo usato per l'esplorazione
         /// </summary>
         protected class Node
         {
@@ -211,9 +207,9 @@ namespace Grid_Planner
        
     class Move : IPlanningAction
     {
-        private Grid_Planner.GridPoint _start, _end;
+        private GridPoint _start, _end;
 
-        public Move(Grid_Planner.GridPoint start, Grid_Planner.GridPoint end)
+        public Move(GridPoint start, GridPoint end)
         {
             _start = start;
             _end = end;

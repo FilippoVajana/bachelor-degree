@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Grid_Planner
+namespace GridPlanner
 {
     interface IGrid
     {
@@ -52,7 +52,7 @@ namespace Grid_Planner
 
         public GridPoint[] GetNeighbors(GridPoint p)
         {
-            if (isGridPoint(p))
+            if (IsGridPoint(p))
             {
                 List<GridPoint> neighbors = new List<GridPoint>
                 {
@@ -66,14 +66,14 @@ namespace Grid_Planner
             return null;
         }
 
-        private bool isGridPoint(GridPoint p)
+        private bool IsGridPoint(GridPoint p)
         {
             return (0 <= p.X && p.X < _sizeCol) && (0 <= p.Y && p.Y < _sizeRow);
         }
 
         public GridPoint GetPoint(int x, int y)
         {
-            if (isGridPoint(new SARPoint(x, y)))
+            if (IsGridPoint(new SARPoint(x, y)))
             {
                 return _grid[y,x];
             }
