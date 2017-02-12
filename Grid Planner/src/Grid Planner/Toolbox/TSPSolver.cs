@@ -7,12 +7,35 @@ namespace GridPlanner.Toolbox
     class TSPSolver
     {
         private SARGrid _env;
-        private int _radius;
-        private List<IPoint> _openNodes; //da espandere
-        private List<IPoint> _closedNodes; //espansi
-        
+        private int _radius;///raggio di espansione della frontiera
+        private ISARPointFilter _sarFilter;///definisce una soglia per la selezione dei punti di interesse
 
-        public TSPSolver(SARGrid environment, SARPoint start, int radius, ISARPointFilter sarFilter )
+        private List<IPoint> _openNodes; ///nodi della frontiera da espandere
+        private List<IPoint> _closedNodes; ///nodi della frontiera espansi        
+
+        public TSPSolver(SARGrid environment, int radius, ISARPointFilter sarFilter)
+        {
+            ///Passi fondamentali
+            ///1-esplorare area
+            ///     -all'interno di un raggio fissato
+            ///     -n espansioni della frontiera
+            ///     
+            ///2-generare lista waypoint
+            ///     -utilizzo di un filtro  
+            ///          
+            ///3-calcolare permutazioni lista wp
+            ///     -algoritmo Vajana
+            ///     -algoritmo Heap
+            ///     
+            ///4-selezionare permutazione a costo minimo
+            ///     -calcolo delle distanze reciproche
+
+            _env = environment;
+            _radius = radius;
+            _sarFilter = sarFilter;            
+        }
+        
+        public Tuple<List<SARPoint>, double> Solve(SARPoint start)
         {
             ///STEP 1
             ///espansione circolare della frontiera
@@ -20,7 +43,7 @@ namespace GridPlanner.Toolbox
 
             //inizializzazione
             _openNodes.Add(start);
-            int counter = radius;
+            int counter = _radius;
 
             //espansione della frontiera
             while (_openNodes.Count > 0 && counter > 0)
@@ -42,46 +65,43 @@ namespace GridPlanner.Toolbox
 
             ///STEP 2
             ///generazione lista punti di interesse
-            
+            #region Step_2
             var _envNodes = new List<SARPoint>(_closedNodes.Count);
             _closedNodes.ForEach(x => _envNodes.Add(_env.GetPoint(x.X, x.Y))); //cast dei nodi
 
-            var _targetNodes = sarFilter.Filter(_envNodes);
+            var _targetNodes = _sarFilter.Filter(_envNodes);
+            #endregion
 
             ///STEP 3
             ///calcolo delle permutazioni
-            
+            #region Step_3
             var _possiblePaths = new VajanaAlgorithm<SARPoint>().Permute(new List<SARPoint>(_targetNodes));
+            #endregion
 
             ///STEP 4
             ///selezione percorso a costo minimo
+            #region Step_4
+            var _pathCostMap = new Dictionary<List<SARPoint>, double>(_possiblePaths.Count); //mappa Percorso -> Costo           
+            Tuple<List<SARPoint>, double> _bestPath = new Tuple<List<SARPoint>, double>(null, double.MaxValue);
 
-            var _pathCostMap = new Dictionary<List<SARPoint>, double>(_possiblePaths.Count);
-            foreach (var path in _possiblePaths)
+            foreach (var path in _possiblePaths) //calcolo costo complessivo dei singoli percorsi
             {
-                var cost = 0;
+                double cost = 0;
                 //calcolo distanza reciproca
                 for (int i = 0; i < (path.Count - 1); i++)
                 {
                     cost += _env.Distance(path[i], path[i + 1]);
+                    if (cost <= _bestPath.Item2)
+                    {
+                        _bestPath = new Tuple<List<SARPoint>, double>(path, cost);
+                    }
                 }
+                _pathCostMap.Add(path, cost);
             }
-            //var _bestPath = _possiblePaths.Find(x => )
+            #endregion
+
+            return _bestPath;
         }
-        ///Passi fondamentali
-        ///1-esplorare area
-        ///     -all'interno di un raggio fissato
-        ///     -n espansioni della frontiera
-        ///     
-        ///2-generare lista waypoint
-        ///     -utilizzo di un filtro  
-        ///          
-        ///3-calcolare permutazioni lista wp
-        ///     -algoritmo Vajana
-        ///     -algoritmo Heap
-        ///     
-        ///4-selezionare permutazione a costo minimo
-        ///     -calcolo delle distanze reciproche
 
         private IPoint[] ExpandNode(SARPoint node)
         {
@@ -102,7 +122,6 @@ namespace GridPlanner.Toolbox
     {
         List<SARPoint> Filter(List<SARPoint> list);
     }
-
     public class SARFilter : ISARPointFilter
     {
         private int _confidenceThreshold;
