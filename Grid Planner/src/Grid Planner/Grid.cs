@@ -21,7 +21,7 @@ namespace GridPlanner
     {
         int Distance(IPoint p1, IPoint p2);
         IPoint[] GetNeighbors(IPoint point);        
-        void BuildRandomGrid(int seed, int iterations);
+        void FillGridRandom(int seed, int iterations);
     }
 
     public class SARGrid : IGrid
@@ -42,22 +42,26 @@ namespace GridPlanner
 
         public SARGrid(int columns, int rows)
         {
-            _sizeCol = columns;
-            _sizeRow = rows;
-            _grid = new SARPoint[_sizeRow, _sizeCol]; //riga X colonna
+            _sizeCol = Math.Abs(columns);
+            _sizeRow = Math.Abs(rows);
+            _grid = new SARPoint[_sizeCol, _sizeRow]; //colonna X riga
 
-            for (int row = 0; row < _sizeRow; row++)
+            for (int col = 0; col < _sizeCol; col++)
             {
-                for (int col = 0; col < _sizeCol; col++)
+                for (int row = 0; row < _sizeRow; row++)
                 {                    
-                    _grid[row, col] = new SARPoint(row, col);
+                    _grid[col, row] = new SARPoint(col, row);
                 }
             }
         }
 
         public int Distance(IPoint p1, IPoint p2)
         {
-            return (Math.Abs(p1.X - p2.X) + Math.Abs(p1.Y - p2.Y));
+            if (IsValidPoint(p1) && IsValidPoint(p2))
+            {
+                return (Math.Abs(p1.X - p2.X) + Math.Abs(p1.Y - p2.Y));
+            }
+            throw new IndexOutOfRangeException("Invalid Points");
         }
 
         public IPoint[] GetNeighbors(IPoint p)
@@ -85,7 +89,7 @@ namespace GridPlanner
         {
             if (IsValidPoint(new SARPoint(x, y)))
             {
-                return _grid[y,x];
+                return _grid[x, y];
             }
             return null;
         }
@@ -96,20 +100,19 @@ namespace GridPlanner
 
             if (_grid != null)
             {
-                for (int row = 0; row < _sizeRow; row++)
+                for (int r = 0; r < _sizeRow; r++)
                 {
-                    gridString += "\t\t";
-                    for (int col = 0; col < _sizeCol; col++)
+                    for (int c = 0; c < _sizeCol; c++)
                     {
-                        gridString += String.Format("{0} ", _grid[row, col].ToString());
+                        gridString += String.Format("{0}", _grid[c, r].ToString());
                     }
-                    gridString += "\n";
+                    gridString += String.Format("\\n");
                 }
             }
             return gridString;
         }
         
-        public void BuildRandomGrid(int seed, int iterations)
+        public void FillGridRandom(int seed, int iterations)
         {            
             Random rnd = new Random(seed);
             int iterCount = 0;
@@ -117,7 +120,7 @@ namespace GridPlanner
 
             while (iterCount < iterations)
             {
-                _grid[rnd.Next(_sizeRow), rnd.Next(_sizeCol)].Type = (SARPoint.PointType) rnd.Next(types.Length);
+                _grid[rnd.Next(_sizeCol), rnd.Next(_sizeRow)].Type = (SARPoint.PointType) rnd.Next(types.Length);
                 iterCount++;
             }
         }
@@ -127,18 +130,13 @@ namespace GridPlanner
 
     public class SARPoint : IPoint
     {
-        public int X { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public int Y { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
-        public enum PointType { Obstacle, Target, Clear }
-        public SARPoint(int x, int y)
-        {
-            Type = PointType.Clear;
-            Danger = 0;
-            Confidence = 0;
-        }
-        
         private PointType _type;
+        private int _dangerLevel;
+        private int _confidenceLevel;
+
+        public int X { get; set; }
+        public int Y { get; set; }
+
         public PointType Type
         {
             get
@@ -150,11 +148,9 @@ namespace GridPlanner
                 if (value == PointType.Clear || value == PointType.Obstacle || value == PointType.Target)
                 {
                     _type = value;
-                }                
+                }
             }
         }
-
-        private int _dangerLevel;
         public int Danger
         {
             get
@@ -169,8 +165,6 @@ namespace GridPlanner
                 }
             }
         }
-
-        private int _confidenceLevel;
         public int Confidence
         {
             get
@@ -186,6 +180,16 @@ namespace GridPlanner
             }
         }
 
+        public enum PointType { Obstacle, Target, Clear }
+
+        public SARPoint(int x, int y)
+        {
+            X = x;
+            Y = y;
+            Type = PointType.Clear;
+            Danger = 0;
+            Confidence = 0;
+        }       
         
         override public String ToString()
         {
