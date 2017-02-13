@@ -94,7 +94,7 @@ namespace GridPlanner
             return null;
         }
 
-        override public string ToString()
+        public string ConvertToConsoleString()
         {
             string gridString = "";
 
@@ -104,7 +104,7 @@ namespace GridPlanner
                 {
                     for (int c = 0; c < _sizeCol; c++)
                     {
-                        gridString += String.Format("{0}", _grid[c, r].ToString());
+                        gridString += String.Format("{0}", _grid[c, r].ConvertToConsoleString());
                     }
                     gridString += String.Format("\\n");
                 }
@@ -191,7 +191,7 @@ namespace GridPlanner
             Confidence = 0;
         }       
         
-        override public String ToString()
+        public String ConvertToConsoleString()
         {
             switch (Type)
             {

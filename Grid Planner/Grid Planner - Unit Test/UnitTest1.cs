@@ -79,7 +79,7 @@ namespace GridPlanner_UnitTest
             var grid = new SARGrid(8, 5);
             grid.FillGridRandom(5, 50);
 
-            var gridString = grid.ToString();
+            var gridString = grid.ConvertToConsoleString();
 
             var n = grid.GetNeighbors(new SARPoint(0, 0));
             Assert.AreEqual(2, n.Length);

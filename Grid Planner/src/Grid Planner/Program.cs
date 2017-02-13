@@ -10,10 +10,10 @@ namespace GridPlanner
         public static void Main(string[] args)
         {
             var grid = new SARGrid(20, 10); 
-            Console.WriteLine(grid.ToString());
+            Console.WriteLine(grid.ConvertToConsoleString());
 
             grid.FillGridRandom(10, 50);
-            Console.WriteLine(grid.ToString());
+            Console.WriteLine(grid.ConvertToConsoleString());
 
             var neighbors = grid.GetNeighbors(new SARPoint(1,1));
             foreach (var n in neighbors)
