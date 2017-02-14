@@ -90,5 +90,19 @@ namespace GridPlanner_UnitTest
             n = grid.GetNeighbors(new SARPoint(1, 4));
             Assert.AreEqual(1, n.Length);
         }
+
+        [TestMethod]
+        public void FileIO()
+        {
+            var savedGrid = new SARGrid(4, 8);
+            savedGrid.FillGridRandom(5, 4);
+
+            string outFilePath = savedGrid.SaveToFile(true);
+            Assert.IsNotNull(outFilePath);
+
+            var loadedGrid = new SARGrid(outFilePath);
+            Assert.AreEqual<string>(savedGrid.ConvertToConsoleString(), loadedGrid.ConvertToConsoleString());
+        }
+        
     }
 }

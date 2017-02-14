@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace GridPlanner
@@ -20,8 +22,9 @@ namespace GridPlanner
     public interface IGrid
     {
         int Distance(IPoint p1, IPoint p2);
-        IPoint[] GetNeighbors(IPoint point);        
-        //void FillGridRandom(int seed, int iterations);        
+        IPoint[] GetNeighbors(IPoint point);
+
+        String SaveToFile(bool debugMode);        
     }
 
     public class SARGrid : IGrid
@@ -37,23 +40,40 @@ namespace GridPlanner
         //{ a b b b b a }
         //{ a a c c c c }
 
-        private int _sizeCol, _sizeRow;
-        private SARPoint[,] _grid;
+        //rivedere nomi e modificatori di accesso
+        public int _numCol, _numRow;
+        public SARPoint[,] _grid;
 
-        public SARGrid(int columns, int rows)
+        public SARGrid(int _numCol, int _numRow)
         {
-            _sizeCol = Math.Abs(columns);
-            _sizeRow = Math.Abs(rows);
-            _grid = new SARPoint[_sizeCol, _sizeRow]; //colonna X riga
+            this._numCol = Math.Abs(_numCol);
+            this._numRow = Math.Abs(_numRow);
+            _grid = new SARPoint[this._numCol, this._numRow]; //colonna X riga
 
-            for (int col = 0; col < _sizeCol; col++)
+            for (int col = 0; col < this._numCol; col++)
             {
-                for (int row = 0; row < _sizeRow; row++)
-                {                    
+                for (int row = 0; row < this._numRow; row++)
+                {
                     _grid[col, row] = new SARPoint(col, row);
                 }
             }
         }
+
+        public SARGrid(string gridFilePath)
+        {
+            var grid = LoadFromFile(gridFilePath);
+
+            _grid = grid._grid;
+            _numCol = grid._numCol;
+            _numRow = grid._numRow;
+        }
+
+        
+        /// <summary>
+        /// Costruttore default usato da JSON
+        /// </summary>
+        public SARGrid()
+        {   }
 
         public int Distance(IPoint p1, IPoint p2)
         {
@@ -82,7 +102,7 @@ namespace GridPlanner
 
         private bool IsValidPoint(IPoint p)
         {
-            return (0 <= p.X && p.X < _sizeCol) && (0 <= p.Y && p.Y < _sizeRow);
+            return (0 <= p.X && p.X < _numCol) && (0 <= p.Y && p.Y < _numRow);
         }
 
         public SARPoint GetPoint(int x, int y)
@@ -100,9 +120,9 @@ namespace GridPlanner
 
             if (_grid != null)
             {
-                for (int r = 0; r < _sizeRow; r++)
+                for (int r = 0; r < _numRow; r++)
                 {
-                    for (int c = 0; c < _sizeCol; c++)
+                    for (int c = 0; c < _numCol; c++)
                     {
                         gridString += String.Format("{0}", _grid[c, r].PrintConsoleChar());
                     }
@@ -120,10 +140,44 @@ namespace GridPlanner
 
             while (iterCount < iterations)
             {
-                _grid[rnd.Next(_sizeCol), rnd.Next(_sizeRow)].Type = (SARPoint.PointType) rnd.Next(types.Length);
+                _grid[rnd.Next(_numCol), rnd.Next(_numRow)].Type = (SARPoint.PointType) rnd.Next(types.Length);
                 iterCount++;
             }
         }
+
+        private static SARGrid LoadFromFile(string path)
+        {
+            string gridFile = File.ReadAllText(path);
+            return Newtonsoft.Json.JsonConvert.DeserializeObject<SARGrid>(gridFile);
+        }
+
+        public string SaveToFile(bool debugMode)//metodo di default
+        {
+            var model = this;
+
+            //serializzo l'istanza corrente della classe Grid
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(model);
+
+            //creo la directory per gli output
+            string appLocalFolder;
+            if (!debugMode)
+                appLocalFolder = Directory.GetCurrentDirectory();
+            else
+                appLocalFolder = Path.GetFullPath(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\Grid Planner - Unit Test\bin\Debug\netcoreapp1.0");
+            var outputDir = Directory.CreateDirectory(Path.Combine(appLocalFolder, "Output"));
+            
+            //calcolo hash della griglia
+            var hashFunc = System.Security.Cryptography.MD5.Create();
+            var stringBuffer = Encoding.ASCII.GetBytes(model.ConvertToConsoleString());
+            byte[] hashValue = hashFunc.ComputeHash(stringBuffer);
+            
+            //creo il file di output
+            var outFileName = $"{BitConverter.ToString(hashValue).Replace("-", "")}_SARGRID.json";
+            string outputFilePath = $"{outputDir.FullName}\\{outFileName}";
+            File.WriteAllText(outputFilePath, json, Encoding.ASCII);
+
+            return outputFilePath;
+        }        
     }
     
     
