@@ -21,7 +21,7 @@ namespace GridPlanner
     {
         int Distance(IPoint p1, IPoint p2);
         IPoint[] GetNeighbors(IPoint point);        
-        void FillGridRandom(int seed, int iterations);
+        //void FillGridRandom(int seed, int iterations);        
     }
 
     public class SARGrid : IGrid
@@ -104,7 +104,7 @@ namespace GridPlanner
                 {
                     for (int c = 0; c < _sizeCol; c++)
                     {
-                        gridString += String.Format("{0}", _grid[c, r].ConvertToConsoleString());
+                        gridString += String.Format("{0}", _grid[c, r].PrintConsoleChar());
                     }
                     gridString += String.Format("\\n");
                 }
@@ -191,7 +191,7 @@ namespace GridPlanner
             Confidence = 0;
         }       
         
-        public String ConvertToConsoleString()
+        public String PrintConsoleChar()
         {
             switch (Type)
             {

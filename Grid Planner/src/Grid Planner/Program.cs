@@ -22,7 +22,7 @@ namespace GridPlanner
             }
 
             Console.Write("\nPress Enter to exit");
-            Console.ReadKey();
+            Console.ReadKey();            
         }
     }
 }
