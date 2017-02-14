@@ -64,20 +64,8 @@ namespace GridPlanner_UnitTest
         [TestMethod]
         public void RetrieveNeighborsRndGrid()
         {
-            //grid
-            //    {		
-            //        $$#%%##$
-            //        %%#$%##$
-            //        %%%%%%%#
-            //        ##%%$%%%
-            //        #%%%#%#$ 
-            // #: ostacolo
-            // $: target
-            // %: libero
-            //    }            
-
             var grid = new SARGrid(8, 5);
-            grid.FillGridRandom(5, 50);
+            grid.RandomizeGrid(5, 50);
 
             var gridString = grid.ConvertToConsoleString();
 
@@ -95,14 +83,21 @@ namespace GridPlanner_UnitTest
         public void FileIO()
         {
             var savedGrid = new SARGrid(4, 8);
-            savedGrid.FillGridRandom(5, 4);
+            savedGrid.RandomizeGrid(5, 4);
 
             string outFilePath = savedGrid.SaveToFile(true);
             Assert.IsNotNull(outFilePath);
 
             var loadedGrid = new SARGrid(outFilePath);
-            Assert.AreEqual<string>(savedGrid.ConvertToConsoleString(), loadedGrid.ConvertToConsoleString());
+            Assert.AreEqual(savedGrid.ConvertToConsoleString(), loadedGrid.ConvertToConsoleString());
         }
         
+        [TestMethod]
+        public void GridRandomization()
+        {
+            var grid = new SARGrid(10, 20);
+            grid.RandomizeGrid(5, 4, 0.8F);
+            grid.SaveToFile(true);
+        }
     }
 }

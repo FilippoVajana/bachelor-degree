@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -58,7 +59,6 @@ namespace GridPlanner
                 }
             }
         }
-
         public SARGrid(string gridFilePath)
         {
             var grid = LoadFromFile(gridFilePath);
@@ -66,9 +66,7 @@ namespace GridPlanner
             _grid = grid._grid;
             _numCol = grid._numCol;
             _numRow = grid._numRow;
-        }
-
-        
+        }        
         /// <summary>
         /// Costruttore default usato da JSON
         /// </summary>
@@ -126,23 +124,68 @@ namespace GridPlanner
                     {
                         gridString += String.Format("{0}", _grid[c, r].PrintConsoleChar());
                     }
-                    gridString += String.Format("\\n");
+                    gridString += System.Environment.NewLine;
                 }
             }
             return gridString;
         }
         
-        public void FillGridRandom(int seed, int iterations)
+        public void RandomizeGrid(int seed, int shuffles)
         {            
             Random rnd = new Random(seed);
             int iterCount = 0;
             var types = Enum.GetValues(typeof(SARPoint.PointType));
 
-            while (iterCount < iterations)
+            while (iterCount < shuffles)
             {
                 _grid[rnd.Next(_numCol), rnd.Next(_numRow)].Type = (SARPoint.PointType) rnd.Next(types.Length);
                 iterCount++;
             }
+        }
+
+        public void RandomizeGrid(int seed, int numTarget, float clearAreaRatio)
+        {
+            const float CONFIDENCE_SPREAD_FACTOR = 0.5F;
+            Random randomizer = new Random(seed);
+            int shufflesCount = 0;
+            var cellTypes = Enum.GetValues(typeof(SARPoint.PointType));
+
+            SARPoint[] targets = new SARPoint[numTarget];
+            //seleziono le celle target   
+            SARPoint _tmpTarget;
+            for (int i = 0; i < numTarget; i++)
+            {
+                _tmpTarget = _grid[randomizer.Next(_numCol), randomizer.Next(_numRow)];
+                _tmpTarget.Type = SARPoint.PointType.Target;
+                targets[i] = _tmpTarget;
+            }
+            //PROBE
+            Debug.WriteLine(ConvertToConsoleString());
+
+            //propago la confidence
+            foreach (var t in targets)
+            {
+                var neighbors = GetNeighbors(t);
+                //propagazione lineare valore di confidence
+                foreach (var n in neighbors)
+                {
+                    var cell = n as SARPoint;
+                    cell.Confidence = (int)(t.Confidence * CONFIDENCE_SPREAD_FACTOR);
+                }
+            }
+
+            //seleziono le celle obstacle
+            while (shufflesCount < (_numCol*_numRow)*(1 - clearAreaRatio))
+            {
+                var _tmpObstacle = _grid[randomizer.Next(_numCol), randomizer.Next(_numRow)];
+                if (!targets.Contains(_tmpObstacle))
+                {
+                    shufflesCount++;
+                    _tmpObstacle.Type = SARPoint.PointType.Obstacle;
+                }
+            }
+            //PROBE
+            Debug.WriteLine(ConvertToConsoleString());
         }
 
         private static SARGrid LoadFromFile(string path)
@@ -201,6 +244,20 @@ namespace GridPlanner
             {
                 if (value == PointType.Clear || value == PointType.Obstacle || value == PointType.Target)
                 {
+                    switch (value)
+                    {
+                        case PointType.Obstacle:
+                            Danger = 10;
+                            Confidence = 0;
+                            break;
+                        case PointType.Target:
+                            Confidence = 10;
+                            break;
+                        case PointType.Clear:
+                            break;
+                        default:
+                            break;
+                    }
                     _type = value;
                 }
             }
