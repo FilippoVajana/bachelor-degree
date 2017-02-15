@@ -17,20 +17,14 @@ namespace GridPlanner
         string ToString();
     }
 
-    public interface IPlanner
-    {
-        APlan ComputePlan(IPoint start, IPoint goal, IHeuristic heuristic);
-        bool SavePlan(APlan plan);        
-    }
-
+    #region PLAN
     public abstract class APlan
     {
         public List<IPlanningAction> Plan { get; }
         public List<IPoint> Path { get; }
         public SearchLogger.SearchLog ExecutionLog { get; }
     }
-
-    public class PlanningResult : APlan
+    internal class PlanningResult : APlan
     {
         private List<IPlanningAction> _plan;
         private List<IPoint> _path;
@@ -51,40 +45,15 @@ namespace GridPlanner
         {
             throw new NotImplementedException();
         }
-    }   
+    }
+    #endregion
 
-    public class SearchLogger
-    {        
-
-        public string SaveToFile(string logsDirPath)
-        {
-            //definisco nome log
-            string logName = $"{GetType().Name}_{DateTime.Now.ToUniversalTime()}";
-
-            //serializzo l'oggetto log
-            string json = JsonConvert.SerializeObject(Log);
-
-            //salvo il log
-            string fullPath = $"{logsDirPath}\\{logName}";
-            var logFile = File.CreateText(fullPath);
-
-            return fullPath;
-        }
-        public SearchLog Log { get; }
-
-        public class SearchLog
-        {
-            internal SearchLog()
-            { }
-
-            private double totalStep;
-            private double totalTime;
-            private int totalOpenNodes;
-        }
-    }    
-
-    
-
+    #region PLANNER
+    public interface IPlanner
+    {
+        APlan ComputePlan(IPoint start, IPoint goal, IHeuristic heuristic);
+        bool SavePlan(APlan plan);
+    }
     public abstract class Planner : IPlanner
     {
         /// <summary>
@@ -104,8 +73,9 @@ namespace GridPlanner
             }
         }
         public abstract APlan ComputePlan(IPoint start, IPoint goal, IHeuristic heuristic);
-        public abstract bool SavePlan(APlan plan);      
-    }
+        public abstract bool SavePlan(APlan plan);
+    } 
+    #endregion
 
     class AStar_Planner : Planner
     {
@@ -226,7 +196,36 @@ namespace GridPlanner
         }
     }
 
-       
+    public class SearchLogger
+    {
+
+        public string SaveToFile(string logsDirPath)
+        {
+            //definisco nome log
+            string logName = $"{GetType().Name}_{DateTime.Now.ToUniversalTime()}";
+
+            //serializzo l'oggetto log
+            string json = JsonConvert.SerializeObject(Log);
+
+            //salvo il log
+            string fullPath = $"{logsDirPath}\\{logName}";
+            var logFile = File.CreateText(fullPath);
+
+            return fullPath;
+        }
+        public SearchLog Log { get; }
+
+        public class SearchLog
+        {
+            internal SearchLog()
+            { }
+
+            private double totalStep;
+            private double totalTime;
+            private int totalOpenNodes;
+        }
+    }
+
     //class Move : IPlanningAction
     //{
     //    private IPoint _start, _end;

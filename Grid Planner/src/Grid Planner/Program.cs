@@ -9,7 +9,7 @@ namespace GridPlanner
     {        
         public static void Main(string[] args)
         {
-            var grid = new SARGrid(10, 20); 
+            var grid = new SAREnvironmentLibrary.SARGrid(10, 20); 
             //Console.WriteLine(grid.ConvertToConsoleString());
 
             grid.RandomizeGrid(10, 5, .65F);
