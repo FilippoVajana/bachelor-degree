@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using SAREnvironmentLibrary;
+using SAREnvironment;
 
 namespace GridPlanner.Toolbox
 {
@@ -33,7 +33,9 @@ namespace GridPlanner.Toolbox
 
             _env = environment;
             _radius = radius;
-            _sarFilter = sarFilter;            
+            _sarFilter = sarFilter;
+            _openNodes = new List<IPoint>();
+            _closedNodes = new List<IPoint>();
         }
         
         public Tuple<List<SARPoint>, double> Solve(SARPoint start)

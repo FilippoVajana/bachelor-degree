@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using SAREnvironmentLibrary;
+using SAREnvironment;
 
 namespace GridPlanner
 {

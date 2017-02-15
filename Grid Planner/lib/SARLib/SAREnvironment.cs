@@ -4,10 +4,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.Runtime;
 
-namespace SAREnvironmentLibrary
+namespace SAREnvironment
 {
     /// <summary>
     /// Schema for a generic two-dimensional point
@@ -119,7 +117,7 @@ namespace SAREnvironmentLibrary
         int Distance(IPoint p1, IPoint p2);
         IPoint[] GetNeighbors(IPoint point);
 
-        String SaveToFile(bool debugMode);
+        String SaveToFile(string destinationPath);
     }
     public class SARGrid : IGrid
     {
@@ -287,20 +285,15 @@ namespace SAREnvironmentLibrary
             return Newtonsoft.Json.JsonConvert.DeserializeObject<SARGrid>(gridFile);
         }
 
-        public string SaveToFile(bool debugMode)//metodo di default
+        public string SaveToFile(string destinationPath)
         {
             var model = this;
 
             //serializzo l'istanza corrente della classe Grid
             string json = Newtonsoft.Json.JsonConvert.SerializeObject(model);
 
-            //creo la directory per gli output
-            string appLocalFolder;
-            if (!debugMode)
-                appLocalFolder = Directory.GetCurrentDirectory();
-            else
-                appLocalFolder = Path.GetFullPath(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\Grid Planner - Unit Test\bin\Debug\netcoreapp1.0");
-            var outputDir = Directory.CreateDirectory(Path.Combine(appLocalFolder, "Output", "SARGrid"));
+            //creo la cartella di destinazione
+            var outputDir = Directory.CreateDirectory(Path.Combine(destinationPath, "Output", "SARGrid"));
 
             //calcolo hash della griglia
             var hashFunc = System.Security.Cryptography.MD5.Create();
@@ -312,7 +305,7 @@ namespace SAREnvironmentLibrary
             string outputFilePath = $"{outputDir.FullName}\\{outFileName}";
             File.WriteAllText(outputFilePath, json, Encoding.ASCII);
 
-            return outputFilePath;
+            return outputFilePath;//path del file appena creato
         }
     }
 }
