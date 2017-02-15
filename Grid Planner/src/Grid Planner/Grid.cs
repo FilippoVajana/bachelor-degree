@@ -207,7 +207,7 @@ namespace GridPlanner
                 appLocalFolder = Directory.GetCurrentDirectory();
             else
                 appLocalFolder = Path.GetFullPath(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\Grid Planner - Unit Test\bin\Debug\netcoreapp1.0");
-            var outputDir = Directory.CreateDirectory(Path.Combine(appLocalFolder, "Output"));
+            var outputDir = Directory.CreateDirectory(Path.Combine(appLocalFolder, "Output", "SARGrid"));
             
             //calcolo hash della griglia
             var hashFunc = System.Security.Cryptography.MD5.Create();

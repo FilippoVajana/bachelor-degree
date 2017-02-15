@@ -19,21 +19,28 @@ namespace GridPlanner
 
     public interface IPlanner
     {
-        PlanningResult ComputePlan(IPoint start, IPoint goal, IHeuristic heuristic);
-        bool SavePlan(PlanningResult plan);        
+        APlan ComputePlan(IPoint start, IPoint goal, IHeuristic heuristic);
+        bool SavePlan(APlan plan);        
     }
 
-    public class PlanningResult
+    public abstract class APlan
+    {
+        public List<IPlanningAction> Plan { get; }
+        public List<IPoint> Path { get; }
+        public SearchLogger.SearchLog ExecutionLog { get; }
+    }
+
+    public class PlanningResult : APlan
     {
         private List<IPlanningAction> _plan;
         private List<IPoint> _path;
         private SearchLogger.SearchLog _log;
 
-        public List<IPlanningAction> Plan { get { return _plan; } }
-        public List<IPoint> Path { get { return _path; } }
-        public SearchLogger.SearchLog ExecutionLog { get { return _log; } }
+        //public List<IPlanningAction> Plan { get { return _plan; } }
+        //public List<IPoint> Path { get { return _path; } }
+        //public SearchLogger.SearchLog ExecutionLog { get { return _log; } }
 
-        protected PlanningResult(List<IPoint> path, SearchLogger logger)
+        internal PlanningResult(List<IPoint> path, SearchLogger logger)
         {
             _path = path;
             _log = logger.Log;
@@ -78,7 +85,7 @@ namespace GridPlanner
 
     
 
-    public class Planner
+    public abstract class Planner : IPlanner
     {
         /// <summary>
         /// Rappresenta un nodo del grafo usato per l'esplorazione
@@ -96,6 +103,8 @@ namespace GridPlanner
                 FCost = 0;
             }
         }
+        public abstract APlan ComputePlan(IPoint start, IPoint goal, IHeuristic heuristic);
+        public abstract bool SavePlan(APlan plan);      
     }
 
     class AStar_Planner : Planner
@@ -106,14 +115,28 @@ namespace GridPlanner
         //private APoint _start;
         //private APoint _goal;
 
-        public AStar_Planner(IGrid env, IHeuristic heuristic)
+        public AStar_Planner(IGrid env)
         {
-            _environment = env;
-            _heuristic = heuristic;
+            _environment = env;            
         }
 
-        
-        
+        public override APlan ComputePlan(IPoint start, IPoint goal, IHeuristic heuristic)
+        {
+            //imposto euristica
+            _heuristic = heuristic;
+
+            //calcolo percorso ottimo
+            var path = FindPath(start, goal);
+
+            //estraggo il piano
+            return (new PlanningResult(path, null));
+        }
+
+        public override bool SavePlan(APlan plan)
+        {
+            throw new NotImplementedException();
+        }
+
         private List<IPoint> FindPath(IPoint start, IPoint goal)
         {
             List<Node> openNodes = new List<Node>();//nodi valutati
@@ -204,26 +227,26 @@ namespace GridPlanner
     }
 
        
-    class Move : IPlanningAction
-    {
-        private IPoint _start, _end;
+    //class Move : IPlanningAction
+    //{
+    //    private IPoint _start, _end;
 
-        public Move(IPoint start, IPoint end)
-        {
-            _start = start;
-            _end = end;
-        }
+    //    public Move(IPoint start, IPoint end)
+    //    {
+    //        _start = start;
+    //        _end = end;
+    //    }
 
-        //public void Execute()
-        //{
-        //    throw new NotImplementedException();
-        //}
+    //    //public void Execute()
+    //    //{
+    //    //    throw new NotImplementedException();
+    //    //}
 
-        public override string ToString()
-        {
-            return String.Format("Move {0} -> {1}", _start, _end);
-        }
-    }
+    //    public override string ToString()
+    //    {
+    //        return String.Format("Move {0} -> {1}", _start, _end);
+    //    }
+    //}
 
 
 }

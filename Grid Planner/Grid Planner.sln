@@ -14,6 +14,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Grid Planner", "src\Grid Pl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Grid Planner - Unit Test", "Grid Planner - Unit Test\Grid Planner - Unit Test.csproj", "{D63FA057-0646-43A2-832E-367A323987B0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExplorationViewer", "..\..\tesi-triennale\Simulation\Tools\ExplorationViewer\ExplorationViewer.csproj", "{15602DCF-BA0D-4517-A78C-A3588053E5CA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -48,6 +50,18 @@ Global
 		{D63FA057-0646-43A2-832E-367A323987B0}.Release|x64.Build.0 = Release|x64
 		{D63FA057-0646-43A2-832E-367A323987B0}.Release|x86.ActiveCfg = Release|x86
 		{D63FA057-0646-43A2-832E-367A323987B0}.Release|x86.Build.0 = Release|x86
+		{15602DCF-BA0D-4517-A78C-A3588053E5CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15602DCF-BA0D-4517-A78C-A3588053E5CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15602DCF-BA0D-4517-A78C-A3588053E5CA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{15602DCF-BA0D-4517-A78C-A3588053E5CA}.Debug|x64.Build.0 = Debug|Any CPU
+		{15602DCF-BA0D-4517-A78C-A3588053E5CA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{15602DCF-BA0D-4517-A78C-A3588053E5CA}.Debug|x86.Build.0 = Debug|Any CPU
+		{15602DCF-BA0D-4517-A78C-A3588053E5CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15602DCF-BA0D-4517-A78C-A3588053E5CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15602DCF-BA0D-4517-A78C-A3588053E5CA}.Release|x64.ActiveCfg = Release|Any CPU
+		{15602DCF-BA0D-4517-A78C-A3588053E5CA}.Release|x64.Build.0 = Release|Any CPU
+		{15602DCF-BA0D-4517-A78C-A3588053E5CA}.Release|x86.ActiveCfg = Release|Any CPU
+		{15602DCF-BA0D-4517-A78C-A3588053E5CA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
