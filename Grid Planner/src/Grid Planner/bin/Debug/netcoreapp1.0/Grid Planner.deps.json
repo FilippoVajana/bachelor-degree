@@ -8,7 +8,8 @@
     ".NETCoreApp,Version=v1.0": {
       "grid planner/1.0.0": {
         "dependencies": {
-          "Newtonsoft.Json": "9.0.1"
+          "Newtonsoft.Json": "9.0.1",
+          "SAREnvironmentLib": "1.0.0"
         },
         "runtime": {
           "Grid Planner.dll": {}
@@ -25,6 +26,14 @@
       "system.runtime.serialization.primitives/4.1.1": {
         "runtime": {
           "lib/netstandard1.3/System.Runtime.Serialization.Primitives.dll": {}
+        }
+      },
+      "sarenvironmentlib/1.0.0": {
+        "dependencies": {
+          "Newtonsoft.Json": "9.0.1"
+        },
+        "runtime": {
+          "SAREnvironmentLib.dll": {}
         }
       }
     }
@@ -48,6 +57,11 @@
       "sha512": "sha512-HZ6Du5QrTG8MNJbf4e4qMO3JRAkIboGT5Fk804uZtg3Gq516S7hAqTm2UZKUHa7/6HUGdVy3AqMQKbns06G/cg==",
       "path": "system.runtime.serialization.primitives/4.1.1",
       "hashPath": "system.runtime.serialization.primitives.4.1.1.nupkg.sha512"
+    },
+    "sarenvironmentlib/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
     }
   }
 }

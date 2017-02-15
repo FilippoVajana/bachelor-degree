@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using SAREnvironmentLibrary;
 
 namespace GridPlanner
 {
@@ -9,7 +10,7 @@ namespace GridPlanner
     {        
         public static void Main(string[] args)
         {
-            var grid = new SAREnvironmentLibrary.SARGrid(10, 20);            
+            var grid = new SARGrid(10, 20);            
 
             grid.RandomizeGrid(10, 5, .65F);
             Console.WriteLine(grid.ConvertToConsoleString());
