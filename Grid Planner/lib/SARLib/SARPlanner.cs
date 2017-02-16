@@ -24,7 +24,7 @@ namespace SARLib.SARPlanner
         public List<IAction> Plan { get; }
         public List<IPoint> Path { get; }
         public SearchLogger.SearchLog ExecutionLog { get; }              
-        //serializza la classe
+
         /// <summary>
         /// Adapter per SARLib.SaveToFile
         /// </summary>
@@ -107,7 +107,7 @@ namespace SARLib.SARPlanner
     }
     #endregion
 
-    class AStar_Planner : Planner
+    public class AStar_Planner : Planner
     {
         private IGrid _environment;
         private IHeuristic _heuristic;

@@ -6,7 +6,7 @@ using System.Text;
 
 namespace SARLib.Toolbox
 {
-    class Saver
+    public class Saver
     {
         public static string SaveToFile(object obj, string destinationPath, string extension) //estrarre in classe dedicata
         {
