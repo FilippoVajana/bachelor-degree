@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace SAREnvironment
+namespace SARLib.SAREnvironment
 {
     /// <summary>
     /// Schema for a generic two-dimensional point

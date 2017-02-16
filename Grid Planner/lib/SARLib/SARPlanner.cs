@@ -3,10 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using SAREnvironment;
 using System.Text;
+using SARLib.SAREnvironment;
 
-namespace SARLib
+namespace SARLib.SARPlanner
 {
     public interface IHeuristic
     {
