@@ -24,11 +24,7 @@ namespace SARLib.SARPlanner
         public List<IAction> Plan { get; }
         public List<IPoint> Path { get; }
         public SearchLogger.SearchLog ExecutionLog { get; }
-
-        public string ConvertToString()
-        {
-            return null;
-        }
+               
 
         public string SaveToFile(string destinationPath, string extension)
         {
@@ -42,7 +38,7 @@ namespace SARLib.SARPlanner
 
             //calcolo hash del file
             var hashFunc = System.Security.Cryptography.MD5.Create();
-            var stringBuffer = Encoding.ASCII.GetBytes(model.ConvertToString());
+            var stringBuffer = Encoding.ASCII.GetBytes(json);
             byte[] hashValue = hashFunc.ComputeHash(stringBuffer);
 
             //creo il file di output

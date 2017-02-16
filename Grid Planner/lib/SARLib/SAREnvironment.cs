@@ -293,15 +293,15 @@ namespace SARLib.SAREnvironment
             string json = Newtonsoft.Json.JsonConvert.SerializeObject(model);
 
             //creo la cartella di destinazione
-            var outputDir = Directory.CreateDirectory(Path.Combine(destinationPath, "Output", "SARGrid"));
+            var outputDir = Directory.CreateDirectory(Path.Combine(destinationPath, "Output", $"{model.GetType().Name}"));
 
             //calcolo hash della griglia
             var hashFunc = System.Security.Cryptography.MD5.Create();
-            var stringBuffer = Encoding.ASCII.GetBytes(model.ConvertToConsoleString());
+            var stringBuffer = Encoding.ASCII.GetBytes(json);
             byte[] hashValue = hashFunc.ComputeHash(stringBuffer);
 
             //creo il file di output
-            var outFileName = $"{BitConverter.ToString(hashValue).Replace("-", "")}_SARGRID.json";
+            var outFileName = $"{BitConverter.ToString(hashValue).Replace("-", "")}_{ model.GetType().Name}.json";
             string outputFilePath = $"{outputDir.FullName}\\{outFileName}";
             File.WriteAllText(outputFilePath, json, Encoding.ASCII);
 
