@@ -23,10 +23,9 @@ namespace SARLib.SARPlanner
     {
         public List<IAction> Plan { get; }
         public List<IPoint> Path { get; }
-        public SearchLogger.SearchLog ExecutionLog { get; }
-               
+        public SearchLogger.SearchLog ExecutionLog { get; }              
 
-        public string SaveToFile(string destinationPath, string extension)
+        public string SaveToFile(string destinationPath, string extension) //estrarre in classe dedicata
         {
             var model = this;
 
@@ -72,8 +71,7 @@ namespace SARLib.SARPlanner
     #region PLANNER
     public interface IPlanner
     {
-        APlan ComputePlan(IPoint start, IPoint goal, IHeuristic heuristic);
-        bool SaveToFile(APlan plan);
+        APlan ComputePlan(IPoint start, IPoint goal, IHeuristic heuristic);        
     }
     public abstract class Planner : IPlanner
     {
@@ -93,8 +91,7 @@ namespace SARLib.SARPlanner
                 FCost = 0;
             }
         }
-        public abstract APlan ComputePlan(IPoint start, IPoint goal, IHeuristic heuristic);
-        public abstract bool SaveToFile(APlan plan);
+        public abstract APlan ComputePlan(IPoint start, IPoint goal, IHeuristic heuristic);        
     }
     #endregion
 
@@ -122,12 +119,7 @@ namespace SARLib.SARPlanner
             //estraggo il piano
             return (new PlanningResult(path, null));
         }
-
-        public override bool SaveToFile(APlan plan)
-        {
-            throw new NotImplementedException();
-        }
-
+        
         private List<IPoint> FindPath(IPoint start, IPoint goal)
         {
             List<Node> openNodes = new List<Node>();//nodi valutati
