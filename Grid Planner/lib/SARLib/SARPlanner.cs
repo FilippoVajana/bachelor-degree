@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using SAREnvironment;
+using System.Text;
 
 namespace SARLib
 {
@@ -23,16 +24,40 @@ namespace SARLib
         public List<IAction> Plan { get; }
         public List<IPoint> Path { get; }
         public SearchLogger.SearchLog ExecutionLog { get; }
+
+        public string ConvertToString()
+        {
+            return null;
+        }
+
+        public string SaveToFile(string destinationPath, string extension)
+        {
+            var model = this;
+
+            //serializzo l'istanza corrente della classe
+            string json = JsonConvert.SerializeObject(model);
+
+            //creo la cartella di destinazione
+            var outputDir = Directory.CreateDirectory(System.IO.Path.Combine(destinationPath, "Output", $"{model.GetType().Name}"));
+
+            //calcolo hash del file
+            var hashFunc = System.Security.Cryptography.MD5.Create();
+            var stringBuffer = Encoding.ASCII.GetBytes(model.ConvertToString());
+            byte[] hashValue = hashFunc.ComputeHash(stringBuffer);
+
+            //creo il file di output
+            var outFileName = $"{BitConverter.ToString(hashValue).Replace("-", "")}_{model.GetType().Name}.{extension}";
+            string outputFilePath = System.IO.Path.Combine(outputDir.FullName, outFileName); //$"{outputDir.FullName}\\{outFileName}";
+            File.WriteAllText(outputFilePath, json, Encoding.ASCII);
+
+            return outputFilePath;//path del file appena creato
+        }
     }
     internal class PlanningResult : APlan
     {
         private List<IAction> _plan;
         private List<IPoint> _path;
         private SearchLogger.SearchLog _log;
-
-        //public List<IPlanningAction> Plan { get { return _plan; } }
-        //public List<IPoint> Path { get { return _path; } }
-        //public SearchLogger.SearchLog ExecutionLog { get { return _log; } }
 
         internal PlanningResult(List<IPoint> path, SearchLogger logger)
         {
@@ -52,7 +77,7 @@ namespace SARLib
     public interface IPlanner
     {
         APlan ComputePlan(IPoint start, IPoint goal, IHeuristic heuristic);
-        bool SavePlan(APlan plan);
+        bool SaveToFile(APlan plan);
     }
     public abstract class Planner : IPlanner
     {
@@ -73,7 +98,7 @@ namespace SARLib
             }
         }
         public abstract APlan ComputePlan(IPoint start, IPoint goal, IHeuristic heuristic);
-        public abstract bool SavePlan(APlan plan);
+        public abstract bool SaveToFile(APlan plan);
     }
     #endregion
 
@@ -102,7 +127,7 @@ namespace SARLib
             return (new PlanningResult(path, null));
         }
 
-        public override bool SavePlan(APlan plan)
+        public override bool SaveToFile(APlan plan)
         {
             throw new NotImplementedException();
         }
