@@ -285,27 +285,14 @@ namespace SARLib.SAREnvironment
             return Newtonsoft.Json.JsonConvert.DeserializeObject<SARGrid>(gridFile);
         }
 
+        /// <summary>
+        /// Adapter per SARLib.SaveToFile
+        /// </summary>
+        /// <param name="destinationPath"></param>
+        /// <returns></returns>
         public string SaveToFile(string destinationPath)
         {
-            var model = this;
-
-            //serializzo l'istanza corrente della classe Grid
-            string json = Newtonsoft.Json.JsonConvert.SerializeObject(model);
-
-            //creo la cartella di destinazione
-            var outputDir = Directory.CreateDirectory(Path.Combine(destinationPath, "Output", $"{model.GetType().Name}"));
-
-            //calcolo hash della griglia
-            var hashFunc = System.Security.Cryptography.MD5.Create();
-            var stringBuffer = Encoding.ASCII.GetBytes(json);
-            byte[] hashValue = hashFunc.ComputeHash(stringBuffer);
-
-            //creo il file di output
-            var outFileName = $"{BitConverter.ToString(hashValue).Replace("-", "")}_{ model.GetType().Name}.json";
-            string outputFilePath = $"{outputDir.FullName}\\{outFileName}";
-            File.WriteAllText(outputFilePath, json, Encoding.ASCII);
-
-            return outputFilePath;//path del file appena creato
+            return SARLib.Toolbox.Saver.SaveToFile(this, destinationPath, ".json");            
         }
     }
 }

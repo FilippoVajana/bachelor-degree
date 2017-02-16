@@ -24,28 +24,40 @@ namespace SARLib.SARPlanner
         public List<IAction> Plan { get; }
         public List<IPoint> Path { get; }
         public SearchLogger.SearchLog ExecutionLog { get; }              
-
-        public string SaveToFile(string destinationPath, string extension) //estrarre in classe dedicata
+        //serializza la classe
+        /// <summary>
+        /// Adapter per SARLib.SaveToFile
+        /// </summary>
+        /// <param name="destinationPath"></param>
+        /// <returns></returns>
+        public string SaveToFile(string destinationPath) //estrarre in classe dedicata
         {
-            var model = this;
+            return SARLib.Toolbox.Saver.SaveToFile(this, destinationPath, ".json");
+            //var model = obj;
 
-            //serializzo l'istanza corrente della classe
-            string json = JsonConvert.SerializeObject(model);
+            ////serializzo l'istanza corrente della classe
+            //string json = JsonConvert.SerializeObject(model);
 
-            //creo la cartella di destinazione
-            var outputDir = Directory.CreateDirectory(System.IO.Path.Combine(destinationPath, "Output", $"{model.GetType().Name}"));
+            ////creo la cartella di destinazione
+            //var outputDir = Directory.CreateDirectory(System.IO.Path.Combine(destinationPath, "Output", $"{model.GetType().Name}"));
 
-            //calcolo hash del file
-            var hashFunc = System.Security.Cryptography.MD5.Create();
-            var stringBuffer = Encoding.ASCII.GetBytes(json);
-            byte[] hashValue = hashFunc.ComputeHash(stringBuffer);
+            ////calcolo hash del file
+            //var hashFunc = System.Security.Cryptography.MD5.Create();
+            //var stringBuffer = Encoding.ASCII.GetBytes(json);
+            //byte[] hashValue = hashFunc.ComputeHash(stringBuffer);
 
-            //creo il file di output
-            var outFileName = $"{BitConverter.ToString(hashValue).Replace("-", "")}_{model.GetType().Name}.{extension}";
-            string outputFilePath = System.IO.Path.Combine(outputDir.FullName, outFileName); //$"{outputDir.FullName}\\{outFileName}";
-            File.WriteAllText(outputFilePath, json, Encoding.ASCII);
+            ////creo il file di output
+            //var outFileName = $"{BitConverter.ToString(hashValue).Replace("-", "")}_{model.GetType().Name}.{extension}";
+            //string outputFilePath = System.IO.Path.Combine(outputDir.FullName, outFileName); //$"{outputDir.FullName}\\{outFileName}";
+            //File.WriteAllText(outputFilePath, json, Encoding.ASCII);
 
-            return outputFilePath;//path del file appena creato
+            //return outputFilePath;//path del file appena creato
+        }
+        //deserializza la classe
+        public APlan LoadFromFile(string path) 
+        {            
+            string plan = File.ReadAllText(path);
+            return JsonConvert.DeserializeObject<APlan>(plan);
         }
     }
     internal class PlanningResult : APlan

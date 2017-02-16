@@ -7,14 +7,7 @@ namespace SARLibUnitTest
 {
     [TestClass]
     public class SAREnvironment
-    {
-        [TestMethod]
-        public void Test()
-        {
-            var grid = new SARGrid(10, 10);
-            grid.Distance(new SARPoint(0, 0), new SARPoint(1, 1));
-
-        }
+    {        
         [TestMethod]
         public void GetValidPoint()
         {
@@ -96,7 +89,7 @@ namespace SARLibUnitTest
             string outFilePath = savedGrid.SaveToFile(Directory.GetCurrentDirectory()); 
 #endif
 #if DEBUG
-            string outFilePath = savedGrid.SaveToFile(Path.GetFullPath(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest\bin\Debug\netcoreapp1.0")); 
+            string outFilePath = savedGrid.SaveToFile(Path.GetFullPath(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest\")); 
 #endif
             Assert.IsNotNull(outFilePath);
 
