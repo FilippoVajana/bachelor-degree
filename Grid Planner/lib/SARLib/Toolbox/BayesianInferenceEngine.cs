@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace SARLib.Toolbox
 {
-    public class BayesianInferenceEngine
+    public class BayesEngine
     {
 
     }
@@ -37,12 +37,32 @@ namespace SARLib.Toolbox
 
             //DEBUG
             Debug.WriteLine($"IN: {input}\t" +
-                $"p(H): {prior[input]}\t" +
+                $"p(H={input}): {prior[input]}\t" +
                 $"p(D|H): {sensorModel[input]}\t" +
                 $"p(D): {pr_D}\n" +
                 $"-----------\n" +
-                $"p(H|D): {posterior}");
+                $"p(H=1|D): {posterior}\n\n");
             return posterior; //p(H=1|D)
         }
+
+        public double Filter(List<int> input, Dictionary<int, double> prior)
+        {
+            double posterior = 0;
+            foreach (int data in input)
+            {
+                //filtro dato in input
+                var post = Filter(data, prior);
+
+                //aggiorno la prior per il prossimo ciclo
+                prior[1] = post;
+                prior[0] = 1 - post;
+
+                //salvo la posterior attuale
+                posterior = post;
+            }
+            return posterior;
+        }
+
+        
     }
 }
