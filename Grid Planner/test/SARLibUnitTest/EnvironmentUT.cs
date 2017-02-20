@@ -6,7 +6,7 @@ using System.IO;
 namespace SARLibUnitTest
 {
     [TestClass]
-    public class SAREnvironment
+    public class EnvironmentUT
     {        
         [TestMethod]
         public void GetValidPoint()

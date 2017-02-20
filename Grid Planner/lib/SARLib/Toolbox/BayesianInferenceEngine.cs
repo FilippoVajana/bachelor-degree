@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
+using System.Diagnostics;
 
 namespace SARLib.Toolbox
 {
@@ -10,33 +11,38 @@ namespace SARLib.Toolbox
 
     }
 
-    class BayesFilter
-    {        
-        double[] H;
-        double prior; //p(H) uniforme sugli Hi
-        double likelihood; //(1 - a)
-        double pD; //p(D)
-
-        public BayesFilter(double likelihood_parm)
-        {   
-            H = new double[]{ 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1 };
-            prior = 1 / H.Length;
-            likelihood = 1 - likelihood_parm;
-
-            H.ToList<double>().ForEach(x => pD += likelihood * prior); //calcolo pD
-        }
-
-        public double Filter(double input)
-        {            
-            IDictionary<double, double> posterior = new Dictionary<double, double>(H.Length);
-            
-            foreach (var Hi in H)
+    public class BayesFilter
+    {
+        Dictionary<int, double> sensorModel; //d,h -> p(d|h)
+        
+        public BayesFilter(double errorPOS, double errorNEG)
+        {
+            sensorModel = new Dictionary<int, double>()
             {
-                var post = (likelihood * prior) / pD;
-                posterior.Add(Hi, post);
+                {1, errorPOS }, //p(1|0)
+                {0, errorNEG },     //p(0|1)           
+            };            
+        }       
+
+        public double Filter(int input, Dictionary<int, double> prior) //state == prior
+        {
+            //aggiorno p(D)
+            double pr_D = 0;
+            foreach (var h in prior)
+            {
+                pr_D += sensorModel[h.Key] * h.Value; 
             }
 
-            return posterior.OrderByDescending(x => x.Value).ElementAt(0).Value;
+            double posterior = sensorModel[input] * prior[input] / pr_D;
+
+            //DEBUG
+            Debug.WriteLine($"IN: {input}\t" +
+                $"p(H): {prior[input]}\t" +
+                $"p(D|H): {sensorModel[input]}\t" +
+                $"p(D): {pr_D}\n" +
+                $"-----------\n" +
+                $"p(H|D): {posterior}");
+            return posterior; //p(H=1|D)
         }
     }
 }
