@@ -3,66 +3,113 @@ using System.Collections.Generic;
 using System.Text;
 using System.Linq;
 using System.Diagnostics;
+using System.IO;
 
 namespace SARLib.Toolbox
 {
     public class BayesEngine
     {
-
-    }
-
-    public class BayesFilter
-    {
-        Dictionary<int, double> sensorModel; //d,h -> p(d|h)
-        
-        public BayesFilter(double errorPOS, double errorNEG)
+        public class BayesFilter
         {
-            sensorModel = new Dictionary<int, double>()
-            {
-                {1, errorPOS }, //p(1|0)
-                {0, errorNEG },     //p(0|1)           
-            };            
-        }       
+            Dictionary<int, double> likelihood; //d,h -> p(d|h)
+            Logger _logger;
+            
+            public BayesFilter(double errorRate, Logger logger)
+            {                
+                //Likelihood
+                likelihood = new Dictionary<int, double>()
+                {
+                    {1, 1 - errorRate }, //p(1|1)
+                    {0, errorRate }, //p(1|0)           
+                };
 
-        public double Filter(int input, Dictionary<int, double> prior) //state == prior
-        {
-            //aggiorno p(D)
-            double pr_D = 0;
-            foreach (var h in prior)
-            {
-                pr_D += sensorModel[h.Key] * h.Value; 
+                _logger = logger;
             }
 
-            double posterior = sensorModel[input] * prior[input] / pr_D;
-
-            //DEBUG
-            Debug.WriteLine($"IN: {input}\t" +
-                $"p(H={input}): {prior[input]}\t" +
-                $"p(D|H): {sensorModel[input]}\t" +
-                $"p(D): {pr_D}\n" +
-                $"-----------\n" +
-                $"p(H=1|D): {posterior}\n\n");
-            return posterior; //p(H=1|D)
-        }
-
-        public double Filter(List<int> input, Dictionary<int, double> prior)
-        {
-            double posterior = 0;
-            foreach (int data in input)
+            public override string ToString()
             {
-                //filtro dato in input
-                var post = Filter(data, prior);
-
-                //aggiorno la prior per il prossimo ciclo
-                prior[1] = post;
-                prior[0] = 1 - post;
-
-                //salvo la posterior attuale
-                posterior = post;
+                return $"p(D=1|H=1) {likelihood[1]}; p(D=1|H=0) {likelihood[0]}";
             }
-            return posterior;
+
+            private double Filter(int input, double prior) //prior = p(H=1)
+            {
+                //tabella della prior
+                var pH = new Dictionary<int, double>()
+                {
+                    {1, prior },
+                    {0, 1 - prior },
+                };
+
+                //calcolo p(D)
+                double pD = 0;
+                foreach (var e in likelihood)
+                {
+                    pD += e.Value * pH[e.Key];
+                }
+
+                //calcolo posterior = p(1!D)
+                double posterior = (likelihood[input] * pH[input]) / pD;
+                //logging
+                _logger?.LogPosterior(input, prior, posterior, likelihood[1]);
+
+                return posterior;
+            }
+
+            public double Filter(List<int> input, double prior)
+            {
+                double finalPosterior = 0;
+                foreach (int data in input)
+                {
+                    //filtro dato in input
+                    var post = Filter(data, prior);
+
+                    //aggiorno la prior per il prossimo ciclo
+                    prior = post;
+                    
+                    //salvo la posterior attuale
+                    finalPosterior = post;                    
+                }
+
+                //logging
+                _logger?.SaveFile();
+
+                return finalPosterior;
+            }
         }
 
-        
+        public class Logger
+        {
+            List<string> _logDiary;
+
+            public Logger()
+            {
+                _logDiary = new List<string>();
+            }
+                        
+            public void LogPosterior(int input, double prior, double posterior, double errorRate)
+            {
+                string log = string.Empty;
+                log = $"{errorRate};{input};{prior};{posterior}";
+                _logDiary.Add(log);
+            }
+
+            public void SaveFile()
+            {
+                //definizione file path
+                var path = Path.GetFullPath(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\lib\SARLib\Toolbox\Logs");
+                path = Path.Combine(path, $"Bayeslog.txt");         
+
+                //inserimento dati
+                string log = string.Empty;
+                foreach (var s in _logDiary)
+                {
+                    log += s + "\n";
+                }
+
+                File.WriteAllText(path, log);
+            }
+        }
     }
+
+    
 }
