@@ -38,7 +38,7 @@ namespace SARLibUnitTest
             }
 
             var filtered = bayes.Filter(inputData, prior);
-            //Assert.AreEqual(0.ToString("N3"), filtered.ToString("N3"));
+            Assert.AreEqual(0.640.ToString("N3"), filtered.ToString("N3"));
         }
     }
 }

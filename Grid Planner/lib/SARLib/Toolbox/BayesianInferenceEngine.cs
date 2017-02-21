@@ -55,6 +55,12 @@ namespace SARLib.Toolbox
                 return posterior;
             }
 
+            /// <summary>
+            /// Aggiorna la probabilità finale p(H=1) mediante l'applicazione del teorema di Bayes
+            /// </summary>
+            /// <param name="input"></param>
+            /// <param name="prior"></param>
+            /// <returns></returns>
             public double Filter(List<int> input, double prior)
             {
                 double finalPosterior = 0;
@@ -74,6 +80,17 @@ namespace SARLib.Toolbox
                 _logger?.SaveFile();
 
                 return finalPosterior;
+            }
+
+            public SAREnvironment.SARGrid UpdateTargetProbabilities(SAREnvironment.SARGrid environment, SAREnvironment.IPoint sensingPoint)
+            {
+                ///1- lettura prior cella p(H)
+                ///2- lettura presenza target D (lista targets)
+                ///3- calcolo posterior p(H|D) con Bayes
+                ///4- lettura lista POI p(H=1) > soglia
+                ///5- aggiornamento prior per i POI (?come?)
+                ///
+                return null;
             }
         }
 

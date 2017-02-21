@@ -134,7 +134,10 @@ namespace SARLib.SAREnvironment
 
         //rivedere nomi e modificatori di accesso
         public int _numCol, _numRow;
+        ///rappresenta sia la topografia dell'ambiente che la distribuzione di probabilità degli obiettivi
         public SARPoint[,] _grid;
+        ///rappresenta le posizioni reali dei target
+        public IPoint[] _targets; 
 
         /// <summary>
         /// Costruttore default usato da JSON
