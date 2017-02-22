@@ -17,14 +17,14 @@ namespace SARLib.SAREnvironment
     }
     public class SARPoint : IPoint
     {
-        private PointType _type;
-        private int _dangerLevel;
-        private int _confidenceLevel;
+        private PointTypes _type;
+        private double _dangerLevel;
+        private double _confidenceLevel;
 
         public int X { get; set; }
         public int Y { get; set; }
 
-        public PointType Type
+        public PointTypes Type
         {
             get
             {
@@ -32,18 +32,19 @@ namespace SARLib.SAREnvironment
             }
             set
             {
-                if (value == PointType.Clear || value == PointType.Obstacle || value == PointType.Target)
+                //togliere if
+                if (value == PointTypes.Clear || value == PointTypes.Obstacle || value == PointTypes.Target)
                 {
                     switch (value)
                     {
-                        case PointType.Obstacle:
-                            Danger = 10;
+                        case PointTypes.Obstacle:
+                            Danger = 1;
                             Confidence = 0;
                             break;
-                        case PointType.Target:
-                            Confidence = 10;
+                        case PointTypes.Target:
+                            Confidence = 1;                            
                             break;
-                        case PointType.Clear:
+                        case PointTypes.Clear:
                             break;
                         default:
                             break;
@@ -52,7 +53,7 @@ namespace SARLib.SAREnvironment
                 }
             }
         }
-        public int Danger
+        public double Danger
         {
             get
             {
@@ -60,13 +61,13 @@ namespace SARLib.SAREnvironment
             }
             set
             {
-                if (0 <= value && value <= 10)
+                if (0 <= value && value <= 1)
                 {
                     _dangerLevel = value;
                 }
             }
         }
-        public int Confidence
+        public double Confidence
         {
             get
             {
@@ -74,20 +75,20 @@ namespace SARLib.SAREnvironment
             }
             set
             {
-                if (0 <= value && value <= 10)
+                if (0 <= value && value <= 1)
                 {
                     _confidenceLevel = value;
                 }
             }
         }
 
-        public enum PointType { Obstacle, Target, Clear }
+        public enum PointTypes { Obstacle, Target, Clear }
 
         public SARPoint(int x, int y)
         {
             X = x;
             Y = y;
-            Type = PointType.Clear;
+            Type = PointTypes.Clear;
             Danger = 0;
             Confidence = 0;
         }
@@ -96,10 +97,10 @@ namespace SARLib.SAREnvironment
         {
             switch (Type)
             {
-                case PointType.Obstacle:
+                case PointTypes.Obstacle:
                     return "#";
                 //break;
-                case PointType.Target:
+                case PointTypes.Target:
                     return "$";
                 //break;                
                 default:
@@ -137,7 +138,7 @@ namespace SARLib.SAREnvironment
         ///rappresenta sia la topografia dell'ambiente che la distribuzione di probabilità degli obiettivi
         public SARPoint[,] _grid;
         ///rappresenta le posizioni reali dei target
-        public IPoint[] _targets; 
+        public List<IPoint> _targets = new List<IPoint>(); 
 
         /// <summary>
         /// Costruttore default usato da JSON
@@ -158,14 +159,14 @@ namespace SARLib.SAREnvironment
                 }
             }
         }
-        public SARGrid(string gridFilePath)
-        {
-            var grid = LoadFromFile(gridFilePath);
+        //public SARGrid(string gridFilePath)
+        //{
+        //    var grid = LoadFromFile(gridFilePath);
 
-            _grid = grid._grid;
-            _numCol = grid._numCol;
-            _numRow = grid._numRow;
-        }
+        //    _grid = grid._grid;
+        //    _numCol = grid._numCol;
+        //    _numRow = grid._numRow;
+        //}
 
         public int Distance(IPoint p1, IPoint p2)
         {
@@ -187,7 +188,7 @@ namespace SARLib.SAREnvironment
                     GetPoint(p.X,p.Y + 1),
                     GetPoint(p.X,p.Y - 1)
                 };
-                return neighbors.FindAll(x => x != null && x.Type != SARPoint.PointType.Obstacle).ToArray();
+                return neighbors.FindAll(x => x != null && x.Type != SARPoint.PointTypes.Obstacle).ToArray();
             }
             return null;
         }
@@ -228,11 +229,11 @@ namespace SARLib.SAREnvironment
         {
             Random rnd = new Random(seed);
             int iterCount = 0;
-            var types = Enum.GetValues(typeof(SARPoint.PointType));
+            var types = Enum.GetValues(typeof(SARPoint.PointTypes));
 
             while (iterCount < shuffles)
             {
-                _grid[rnd.Next(_numCol), rnd.Next(_numRow)].Type = (SARPoint.PointType)rnd.Next(types.Length);
+                _grid[rnd.Next(_numCol), rnd.Next(_numRow)].Type = (SARPoint.PointTypes)rnd.Next(types.Length);
                 iterCount++;
             }
         }
@@ -242,7 +243,7 @@ namespace SARLib.SAREnvironment
             const float CONFIDENCE_SPREAD_FACTOR = 0.5F;
             Random randomizer = new Random(seed);
             int shufflesCount = 0;
-            var cellTypes = Enum.GetValues(typeof(SARPoint.PointType));
+            var cellTypes = Enum.GetValues(typeof(SARPoint.PointTypes));
 
             SARPoint[] targets = new SARPoint[numTarget];
             //seleziono le celle target   
@@ -250,7 +251,7 @@ namespace SARLib.SAREnvironment
             for (int i = 0; i < numTarget; i++)
             {
                 _tmpTarget = _grid[randomizer.Next(_numCol), randomizer.Next(_numRow)];
-                _tmpTarget.Type = SARPoint.PointType.Target;
+                _tmpTarget.Type = SARPoint.PointTypes.Target;
                 targets[i] = _tmpTarget;
             }
             //PROBE
@@ -275,7 +276,7 @@ namespace SARLib.SAREnvironment
                 if (!targets.Contains(_tmpObstacle))
                 {
                     shufflesCount++;
-                    _tmpObstacle.Type = SARPoint.PointType.Obstacle;
+                    _tmpObstacle.Type = SARPoint.PointTypes.Obstacle;
                 }
             }
             //PROBE
@@ -297,5 +298,69 @@ namespace SARLib.SAREnvironment
         {
             return SARLib.Toolbox.Saver.SaveToFile(this, destinationPath, ".json");            
         }
+    }
+
+    public class SARViewer
+    {
+        public enum SARPointAttributes { Confidence, Danger }
+
+        SARGrid _env;        
+
+        public SARViewer(SARGrid environment)
+        {
+            _env = environment;
+        }
+
+        public void DisplayProperty(SARPointAttributes attribute)
+        {
+            switch (attribute)
+            {
+                case SARPointAttributes.Confidence:
+                    Debug.WriteLine($"CONFIDENCE PROBABILITY DISTRIBUTION \n\n" +
+                        $"{PrintConfidence(_env)}");
+                    break;
+                case SARPointAttributes.Danger:
+                    Debug.WriteLine($"DANGER PROBABILITY DISTRIBUTION \n\n" +
+                        $"{PrintDanger(_env)}");
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        Func<SARGrid, string> PrintConfidence = delegate (SARGrid env)
+        {
+            string gridString = string.Empty;
+            var _numRow = env._numRow - 1;
+            var _numCol = env._numCol;
+
+            for (int r = _numRow; r >= 0 ; r--)
+            {
+                for (int c = 0; c < _numCol ; c++)
+                {
+                    gridString += String.Format(" {0} ", env._grid[c, r].Confidence);
+                }
+                gridString += System.Environment.NewLine;
+            }
+
+            return gridString;
+        };
+        Func<SARGrid, string> PrintDanger = delegate (SARGrid env)
+        {
+            string gridString = string.Empty;
+            var _numRow = env._numRow - 1;
+            var _numCol = env._numCol;
+
+            for (int r = _numRow; r >= 0; r--)
+            {
+                for (int c = 0; c < _numCol; c++)
+                {
+                    gridString += String.Format(" {0} ", env._grid[c, r].Danger);
+                }
+                gridString += System.Environment.NewLine;
+            }
+
+            return gridString;
+        };
     }
 }
