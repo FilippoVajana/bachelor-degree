@@ -91,6 +91,17 @@ namespace SARLib.Toolbox
             /// <returns></returns>
             public SARGrid UpdateConfidence(SARGrid environment, IPoint sensingPoint)
             {
+                Func<double, double, double, string> PrintUpdateParameters = delegate (double pr, double d, double post)
+                {
+                    string result = string.Empty;
+                    result = string.Format("POINT: ({0},{1})\n" +
+                        "PRIOR: {2:0.000}\n" +
+                        "DELTA: {3:0.000}\n" +
+                        "POSTERIOR: {4:0.000}\n", sensingPoint.X, sensingPoint.Y, pr, d, post);
+
+                    return result;
+                };
+
                 ///1- lettura prior cella p(H)
                 var prior = environment.GetPoint(sensingPoint.X, sensingPoint.Y).Confidence;
 
@@ -99,12 +110,16 @@ namespace SARLib.Toolbox
 
                 ///3- calcolo posterior p(H|D) con Bayes
                 var posterior = Filter(sensorRead, prior);
+                environment.GetPoint(sensingPoint.X, sensingPoint.Y).Confidence = posterior;
 
                 ///4- ottengo una copia della griglia ambiente
                 SARPoint[,] envGrid = (SARPoint[,]) environment._grid.Clone();
 
                 ///5- aggiornamento prior per i POI (?come?)
                 var delta = posterior - prior; //valuto Δp nella posizione di rilevamento
+
+                //DEBUG
+                Debug.WriteLine(PrintUpdateParameters(prior, delta, posterior));
 
                 foreach (var cell in envGrid)
                 {
@@ -139,11 +154,13 @@ namespace SARLib.Toolbox
                 //discrimino sul valore del delta
                 if (delta >= 0)
                 {
-                    return PosDeltaProp(t.Confidence / 10, delta, distance);
+                    var d = PosDeltaProp(t.Confidence, delta, distance);
+                    return d;
                 }
                 else
                 {
-                    return NegDeltaProp(t.Confidence / 10, delta, distance);
+                    var d = NegDeltaProp(t.Confidence, delta, distance);
+                    return d;
                 }
             }            
         }
