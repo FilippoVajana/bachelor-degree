@@ -159,14 +159,14 @@ namespace SARLib.SAREnvironment
                 }
             }
         }
-        //public SARGrid(string gridFilePath)
-        //{
-        //    var grid = LoadFromFile(gridFilePath);
+        public SARGrid(string gridFilePath)
+        {
+            var grid = LoadFromFile(gridFilePath);
 
-        //    _grid = grid._grid;
-        //    _numCol = grid._numCol;
-        //    _numRow = grid._numRow;
-        //}
+            _grid = grid._grid;
+            _numCol = grid._numCol;
+            _numRow = grid._numRow;
+        }
 
         public int Distance(IPoint p1, IPoint p2)
         {
@@ -338,7 +338,7 @@ namespace SARLib.SAREnvironment
             {
                 for (int c = 0; c < _numCol ; c++)
                 {
-                    gridString += String.Format(" {0} ", env._grid[c, r].Confidence);
+                    gridString += String.Format(" {0:0.000} ", env._grid[c, r].Confidence);
                 }
                 gridString += System.Environment.NewLine;
             }
@@ -355,7 +355,7 @@ namespace SARLib.SAREnvironment
             {
                 for (int c = 0; c < _numCol; c++)
                 {
-                    gridString += String.Format(" {0} ", env._grid[c, r].Danger);
+                    gridString += String.Format(" {0:0.000} ", env._grid[c, r].Danger);
                 }
                 gridString += System.Environment.NewLine;
             }
