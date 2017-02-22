@@ -57,7 +57,7 @@ namespace SARLib.Toolbox
             }
 
             /// <summary>
-            /// Aggiorna la probabilità finale p(H=1) mediante l'applicazione del teorema di Bayes
+            /// Modifica il livello di Confidence applicando il Teorema di Bayes
             /// </summary>
             /// <param name="input"></param>
             /// <param name="prior"></param>
@@ -83,6 +83,12 @@ namespace SARLib.Toolbox
                 return finalPosterior;
             }
 
+            /// <summary>
+            /// Aggiorna la distribuzione di probabilità nell'ambiente di ricerca del parametro Confidence
+            /// </summary>
+            /// <param name="environment"></param>
+            /// <param name="sensingPoint"></param>
+            /// <returns></returns>
             public SARGrid UpdateConfidence(SARGrid environment, IPoint sensingPoint)
             {
                 ///1- lettura prior cella p(H)
@@ -106,7 +112,7 @@ namespace SARLib.Toolbox
                     double post = ComputePosteriorPropagation(cell, delta, environment.Distance(sensingPoint, cell));
 
                     //attuo l'aggiornamento della probabilità                    
-                    environment.GetPoint(cell.X, cell.Y).Confidence = (int) (post * 10); //provvisorio - portare a double/decimal
+                    environment.GetPoint(cell.X, cell.Y).Confidence = post; //provvisorio - portare a double/decimal
                 }
                 
                 return environment;
