@@ -44,7 +44,7 @@ namespace SARLibUnitTest
         }
 
         [TestMethod]
-        public void PositiveConfidencePropagation()
+        public void PositiveConfidenceGridPropagation()
         {
             //var bayesEngine = new BayesEngine();
             var bayes = new BayesEngine.BayesFilter(0.2, new BayesEngine.Logger());
@@ -58,13 +58,13 @@ namespace SARLibUnitTest
             //imposto punto di sensing #1
             var trueTarget = envGrid.GetPoint(0, 0);
             trueTarget.Type = SARPoint.PointTypes.Target;
-            trueTarget.Confidence = prior;
+            envGrid.BuildSARPoint(trueTarget.X, trueTarget.Y, prior, trueTarget.Danger);            
             envGrid._targets.Add(trueTarget);
 
             //imposto punto di sensing #2
             var falseTarget = envGrid.GetPoint(4, 9);
             falseTarget.Type = SARPoint.PointTypes.Clear;
-            falseTarget.Confidence = prior;
+            envGrid.BuildSARPoint(falseTarget.X, falseTarget.Y, prior, falseTarget.Danger);
 
             //visualizzo la griglia prima dell'aggiornamento
             viewer.DisplayProperty(SARViewer.SARPointAttributes.Confidence);
@@ -85,7 +85,7 @@ namespace SARLibUnitTest
         }
 
         [TestMethod]
-        public void NegativeConfidencePropagation()
+        public void NegativeConfidenceGridPropagation()
         {
             //var bayesEngine = new BayesEngine();
             var bayes = new BayesEngine.BayesFilter(0.2, new BayesEngine.Logger());
@@ -99,13 +99,13 @@ namespace SARLibUnitTest
             //imposto punto di sensing #1
             var trueTarget = envGrid.GetPoint(0, 0);
             trueTarget.Type = SARPoint.PointTypes.Target;
-            trueTarget.Confidence = prior;
+            envGrid.BuildSARPoint(trueTarget.X, trueTarget.Y, prior, trueTarget.Danger);
             envGrid._targets.Add(trueTarget);
 
             //imposto punto di sensing #2
             var falseTarget = envGrid.GetPoint(4, 9);
             falseTarget.Type = SARPoint.PointTypes.Clear;
-            falseTarget.Confidence = prior;
+            envGrid.BuildSARPoint(falseTarget.X, falseTarget.Y, prior, falseTarget.Danger);
 
             //visualizzo la griglia prima dell'aggiornamento
             viewer.DisplayProperty(SARViewer.SARPointAttributes.Confidence);

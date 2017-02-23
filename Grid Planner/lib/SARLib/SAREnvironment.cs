@@ -21,6 +21,8 @@ namespace SARLib.SAREnvironment
         private double _dangerLevel;
         private double _confidenceLevel;
 
+        
+
         public int X { get; set; }
         public int Y { get; set; }
 
@@ -84,16 +86,16 @@ namespace SARLib.SAREnvironment
 
         public enum PointTypes { Obstacle, Target, Clear }
 
-        public SARPoint(int x, int y)
+        internal SARPoint(int x, int y, double confidence, double danger)
         {
             X = x;
             Y = y;
             Type = PointTypes.Clear;
-            Danger = 0;
-            Confidence = 0;
+            Danger = danger;
+            Confidence = confidence;
         }
 
-        public String PrintConsoleChar()
+        public String PrintConsoleFriendly()
         {
             switch (Type)
             {
@@ -155,7 +157,7 @@ namespace SARLib.SAREnvironment
             {
                 for (int row = 0; row < this._numRow; row++)
                 {
-                    _grid[col, row] = new SARPoint(col, row);
+                    _grid[col, row] = BuildSARPoint(col, row, 0, 0);
                 }
             }
         }
@@ -193,20 +195,32 @@ namespace SARLib.SAREnvironment
             return null;
         }
 
-        private bool IsValidPoint(IPoint p)
+        public SARPoint BuildSARPoint(int x, int y, double confidence, double danger)
         {
-            return (0 <= p.X && p.X < _numCol) && (0 <= p.Y && p.Y < _numRow);
+            //instanzio punto
+            var point = new SARPoint(x, y, confidence, danger);
+                        
+            //propago Confidence ai punti adiacenti
+            var neighbors = this.GetNeighbors(point);
+            foreach (var n in neighbors)
+            {
+                var p = n as SARPoint;
+                point.Confidence = confidence * 0.5;
+            }
+
+            return point;
         }
 
         public SARPoint GetPoint(int x, int y)
         {
-            if (IsValidPoint(new SARPoint(x, y)))
+            if (IsValidPoint(new SARPoint(x, y, 0, 0)))
             {
                 return _grid[x, y];
             }
             return null;
         }
 
+        //rendere privato in override ToString
         public string ConvertToConsoleString()
         {
             string gridString = "";
@@ -217,7 +231,7 @@ namespace SARLib.SAREnvironment
                 {
                     for (int c = 0; c < _numCol; c++)
                     {
-                        gridString += String.Format("{0}", _grid[c, r].PrintConsoleChar());
+                        gridString += String.Format("{0}", _grid[c, r].PrintConsoleFriendly());
                     }
                     gridString += System.Environment.NewLine;
                 }
@@ -225,6 +239,7 @@ namespace SARLib.SAREnvironment
             return gridString;
         }
 
+        #region Randomizer
         public void RandomizeGrid(int seed, int shuffles)
         {
             Random rnd = new Random(seed);
@@ -281,13 +296,22 @@ namespace SARLib.SAREnvironment
             }
             //PROBE
             Debug.WriteLine(ConvertToConsoleString());
-        }
+        } 
+        #endregion
 
+        #region Metodi privati
+
+        private bool IsValidPoint(IPoint p)
+        {
+            return (0 <= p.X && p.X < _numCol) && (0 <= p.Y && p.Y < _numRow);
+        }
         private static SARGrid LoadFromFile(string path)
         {
             string gridFile = File.ReadAllText(path);
             return Newtonsoft.Json.JsonConvert.DeserializeObject<SARGrid>(gridFile);
-        }
+        } 
+
+        #endregion
 
         /// <summary>
         /// Adapter per SARLib.SaveToFile
