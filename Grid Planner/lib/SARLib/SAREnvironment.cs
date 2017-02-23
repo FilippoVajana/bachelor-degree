@@ -16,15 +16,26 @@ namespace SARLib.SAREnvironment
         int Y { get; set; }
     }
     public class SARPoint : IPoint
-    {
+    {        
         private PointTypes _type;
         private double _dangerLevel;
         private double _confidenceLevel;
-
-        
-
         public int X { get; set; }
         public int Y { get; set; }
+
+        /// <summary>
+        /// Costruttore usato da serializzatore JSON
+        /// </summary>
+        public SARPoint()
+        { }
+        internal SARPoint(int x, int y, double confidence, double danger, PointTypes type)
+        {
+            X = x;
+            Y = y;
+            Type = type;
+            Danger = danger;
+            Confidence = confidence;
+        }
 
         public PointTypes Type
         {
@@ -44,7 +55,7 @@ namespace SARLib.SAREnvironment
                             Confidence = 0;
                             break;
                         case PointTypes.Target:
-                            Confidence = 1;                            
+                            //Confidence = 1;                            
                             break;
                         case PointTypes.Clear:
                             break;
@@ -86,15 +97,7 @@ namespace SARLib.SAREnvironment
 
         public enum PointTypes { Obstacle, Target, Clear }
 
-        internal SARPoint(int x, int y, double confidence, double danger)
-        {
-            X = x;
-            Y = y;
-            Type = PointTypes.Clear;
-            Danger = danger;
-            Confidence = confidence;
-        }
-
+        
         public String PrintConsoleFriendly()
         {
             switch (Type)
@@ -119,7 +122,7 @@ namespace SARLib.SAREnvironment
     {
         int Distance(IPoint p1, IPoint p2);
         IPoint[] GetNeighbors(IPoint point);
-
+        IPoint GetPoint(int x, int y);
         String SaveToFile(string destinationPath);
     }
     public class SARGrid : IGrid
@@ -140,10 +143,11 @@ namespace SARLib.SAREnvironment
         ///rappresenta sia la topografia dell'ambiente che la distribuzione di probabilità degli obiettivi
         public SARPoint[,] _grid;
         ///rappresenta le posizioni reali dei target
-        public List<IPoint> _targets = new List<IPoint>(); 
+        public List<IPoint> _targets = new List<IPoint>();
 
+        #region Costruttori
         /// <summary>
-        /// Costruttore default usato da JSON
+        /// Costruttore default usato da serializzatore JSON
         /// </summary>
         public SARGrid()
         { }
@@ -157,7 +161,7 @@ namespace SARLib.SAREnvironment
             {
                 for (int row = 0; row < this._numRow; row++)
                 {
-                    _grid[col, row] = BuildSARPoint(col, row, 0, 0);
+                    _grid[col, row] = BuildSARPoint(col, row, 0, 0, SARPoint.PointTypes.Clear);
                 }
             }
         }
@@ -168,7 +172,8 @@ namespace SARLib.SAREnvironment
             _grid = grid._grid;
             _numCol = grid._numCol;
             _numRow = grid._numRow;
-        }
+        } 
+        #endregion
 
         public int Distance(IPoint p1, IPoint p2)
         {
@@ -195,17 +200,23 @@ namespace SARLib.SAREnvironment
             return null;
         }
 
-        public SARPoint BuildSARPoint(int x, int y, double confidence, double danger)
+        public SARPoint BuildSARPoint(int x, int y, double confidence, double danger, SARPoint.PointTypes type)
         {
             //instanzio punto
-            var point = new SARPoint(x, y, confidence, danger);
-                        
+            var point = new SARPoint(x, y, confidence, danger, type);
+
+            //aggiungo il punto alla griglia
+            _grid[x, y] = point;
+            //aggiungo il punto alla lista dei target reali
+            if (type == SARPoint.PointTypes.Target)
+                _targets.Add(point);
+
             //propago Confidence ai punti adiacenti
             var neighbors = this.GetNeighbors(point);
             foreach (var n in neighbors)
             {
                 var p = n as SARPoint;
-                point.Confidence = confidence * 0.5;
+                p.Confidence = confidence * 0.5;
             }
 
             return point;
@@ -213,13 +224,23 @@ namespace SARLib.SAREnvironment
 
         public SARPoint GetPoint(int x, int y)
         {
-            if (IsValidPoint(new SARPoint(x, y, 0, 0)))
+            if (IsValidPoint(new SARPoint(x, y, 0, 0, SARPoint.PointTypes.Clear)))
             {
                 return _grid[x, y];
             }
             return null;
         }
 
+        /// <summary>
+        /// Adapter per GetPoint
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <returns></returns>
+        IPoint IGrid.GetPoint(int x, int y)
+        {
+            return GetPoint(x, y);
+        }
         //rendere privato in override ToString
         public string ConvertToConsoleString()
         {
@@ -322,6 +343,7 @@ namespace SARLib.SAREnvironment
         {
             return SARLib.Toolbox.Saver.SaveToFile(this, destinationPath, ".json");            
         }
+                
     }
 
     public class SARViewer

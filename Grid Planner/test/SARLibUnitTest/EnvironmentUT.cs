@@ -54,10 +54,10 @@ namespace SARLibUnitTest
         {
             var grid = new SARGrid(5, 5);
 
-            var n = grid.GetNeighbors(new SARPoint(0, 0));
+            var n = grid.GetNeighbors(grid.GetPoint(0, 0));
             Assert.AreEqual(2, n.Length);
 
-            n = grid.GetNeighbors(new SARPoint(2, 2));
+            n = grid.GetNeighbors(grid.GetPoint(2, 2));
             Assert.AreEqual(4, n.Length);
         }
 
@@ -69,13 +69,13 @@ namespace SARLibUnitTest
 
             var gridString = grid.ConvertToConsoleString();
 
-            var n = grid.GetNeighbors(new SARPoint(0, 0));
+            var n = grid.GetNeighbors(grid.GetPoint(0, 0));
             Assert.AreEqual(2, n.Length);
 
-            n = grid.GetNeighbors(new SARPoint(2, 2));
+            n = grid.GetNeighbors(grid.GetPoint(2, 2));
             Assert.AreEqual(3, n.Length);
 
-            n = grid.GetNeighbors(new SARPoint(1, 4));
+            n = grid.GetNeighbors(grid.GetPoint(1, 4));
             Assert.AreEqual(1, n.Length);
         }
 

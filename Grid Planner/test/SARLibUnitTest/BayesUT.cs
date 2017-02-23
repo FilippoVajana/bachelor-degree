@@ -52,20 +52,17 @@ namespace SARLibUnitTest
 
             //creo ambiente
             var envGrid = new SARGrid(5, 10);
-            var viewer = new SARViewer(envGrid);            
+            var viewer = new SARViewer(envGrid);
             //Debug.WriteLine(envGrid.ConvertToConsoleString());
 
             //imposto punto di sensing #1
-            var trueTarget = envGrid.GetPoint(0, 0);
-            trueTarget.Type = SARPoint.PointTypes.Target;
-            envGrid.BuildSARPoint(trueTarget.X, trueTarget.Y, prior, trueTarget.Danger);            
-            envGrid._targets.Add(trueTarget);
-
+            var p = envGrid.GetPoint(0, 0);
+            var trueTarget = envGrid.BuildSARPoint(p.X, p.Y, prior, p.Danger, SARPoint.PointTypes.Target);            
+            
             //imposto punto di sensing #2
-            var falseTarget = envGrid.GetPoint(4, 9);
-            falseTarget.Type = SARPoint.PointTypes.Clear;
-            envGrid.BuildSARPoint(falseTarget.X, falseTarget.Y, prior, falseTarget.Danger);
-
+            p = envGrid.GetPoint(4, 9);
+            var falseTarget = envGrid.BuildSARPoint(p.X, p.Y, prior, p.Danger, SARPoint.PointTypes.Clear);            
+            
             //visualizzo la griglia prima dell'aggiornamento
             viewer.DisplayProperty(SARViewer.SARPointAttributes.Confidence);
 
@@ -97,15 +94,12 @@ namespace SARLibUnitTest
             //Debug.WriteLine(envGrid.ConvertToConsoleString());
 
             //imposto punto di sensing #1
-            var trueTarget = envGrid.GetPoint(0, 0);
-            trueTarget.Type = SARPoint.PointTypes.Target;
-            envGrid.BuildSARPoint(trueTarget.X, trueTarget.Y, prior, trueTarget.Danger);
-            envGrid._targets.Add(trueTarget);
+            var p = envGrid.GetPoint(0, 0);
+            var trueTarget = envGrid.BuildSARPoint(p.X, p.Y, prior, p.Danger, SARPoint.PointTypes.Target);
 
             //imposto punto di sensing #2
-            var falseTarget = envGrid.GetPoint(4, 9);
-            falseTarget.Type = SARPoint.PointTypes.Clear;
-            envGrid.BuildSARPoint(falseTarget.X, falseTarget.Y, prior, falseTarget.Danger);
+            p = envGrid.GetPoint(4, 9);
+            var falseTarget = envGrid.BuildSARPoint(p.X, p.Y, prior, p.Danger, SARPoint.PointTypes.Clear);
 
             //visualizzo la griglia prima dell'aggiornamento
             viewer.DisplayProperty(SARViewer.SARPointAttributes.Confidence);

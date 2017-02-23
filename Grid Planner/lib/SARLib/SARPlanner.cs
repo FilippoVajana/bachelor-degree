@@ -66,6 +66,7 @@ namespace SARLib.SARPlanner
     {
         APlan ComputePlan(IPoint start, IPoint goal, IHeuristic heuristic);        
     }
+
     public abstract class Planner : IPlanner
     {
         /// <summary>
@@ -76,10 +77,10 @@ namespace SARLib.SARPlanner
             public IPoint point;
             public double GCost { get; set; } //costo dall'origine
             public double FCost { get; set; } //costo aggregato g + h
-
-            public Node(int column, int row)
+            
+            public Node(IPoint point)
             {
-                point = new SARPoint(column, row);
+                this.point = point;
                 GCost = double.MaxValue;
                 FCost = 0;
             }
@@ -119,11 +120,11 @@ namespace SARLib.SARPlanner
             List<Node> closedNodes = new List<Node>();//nodi valutati ed espansi
             Dictionary<Node, Node> cameFrom = new Dictionary<Node, Node>();//mappa Arrivo -> Partenza
 
+            #region Funzioni
             Func<Node> _minFCostNode = delegate ()
-            {
-                return (openNodes.Select(x => Tuple.Create(x, x.FCost))).Min().Item1;
-            };
-
+                {
+                    return (openNodes.Select(x => Tuple.Create(x, x.FCost))).Min().Item1;
+                };
             Func<Node, List<IPoint>> _pathToPoint = delegate (Node endPoint)
             {
                 var path = new List<IPoint>
@@ -141,14 +142,14 @@ namespace SARLib.SARPlanner
                 }
                 return path;
             };
-
             Func<IPoint, IPoint, double> _distanceBetween = delegate (IPoint p1, IPoint p2)
             {
                 return Math.Abs(p1.X - p2.X) + Math.Abs(p1.Y - p2.Y);
             };
-
+            #endregion
+            
             //inizializzo frontiera
-            var s = new Node(start.Y, start.X)
+            var s = new Node(start)
             {
                 GCost = 0
             };
@@ -178,7 +179,7 @@ namespace SARLib.SARPlanner
                         if (!openNodes.Select(x => x.point).Contains(nearPoint))
                         {
                             //è un nodo mai visitato in precedenza
-                            var nNode = new Node(nearPoint.X, nearPoint.Y);
+                            var nNode = new Node(_environment.GetPoint(nearPoint.X, nearPoint.Y));
                             openNodes.Add(nNode);
 
                             cameFrom.Add(nNode, null);

@@ -94,7 +94,8 @@ namespace SARLib.Toolbox
                 Func<double, double, double, string> PrintUpdateParameters = delegate (double pr, double d, double post)
                 {
                     string result = string.Empty;
-                    result = string.Format("POINT: ({0},{1})\n" +
+                    result = string.Format("UPDATING CONFIDENCE\n" +
+                        "POINT: ({0},{1})\n" +
                         "PRIOR: {2:0.000}\n" +
                         "DELTA: {3:0.000}\n" +
                         "POSTERIOR: {4:0.000}\n", sensingPoint.X, sensingPoint.Y, pr, d, post);
