@@ -138,13 +138,13 @@ namespace SARLib.Toolbox
 
             private Func<double, double, int, double> NegDeltaProp = delegate (double Pk, double dPn, int distance)
                 {
-                    var norm = dPn / Math.Sqrt(distance);
+                    var norm = Math.Abs(dPn / Math.Sqrt(distance));
                     return Pk + (1 - Pk) * norm;
                 };
 
             private Func<double, double, int, double> PosDeltaProp = delegate (double Pk, double dPn, int distance)
             {
-                var norm = dPn / Math.Sqrt(distance);
+                var norm = Math.Abs(dPn / Math.Sqrt(distance));
                 return Pk - (Pk * norm);
             };
 
