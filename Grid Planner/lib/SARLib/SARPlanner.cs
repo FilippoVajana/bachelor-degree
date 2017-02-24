@@ -8,9 +8,20 @@ using SARLib.SAREnvironment;
 
 namespace SARLib.SARPlanner
 {
+    /// <summary>
+    /// Funzione costo del percorso
+    /// </summary>
     public interface IHeuristic
     {
         double EvaluateCost(IPoint point, IPoint goal);
+    }
+
+    /// <summary>
+    /// Strategia per la selezione del prossimo goal
+    /// </summary>
+    public interface ISARStrategy
+    {
+        SARPoint SelectNextTarget(SARGrid environment);
     }
 
     public interface IAction
@@ -64,11 +75,11 @@ namespace SARLib.SARPlanner
     #region PLANNER
     public interface IPlanner
     {
-        APlan ComputePlan(IPoint start, IPoint goal, IHeuristic heuristic);        
+        APlan ComputePlan(IPoint start, IHeuristic heuristic); //il goal viene calcolato internamente       
     }
 
     public abstract class Planner : IPlanner
-    {
+    {        
         /// <summary>
         /// Rappresenta un nodo del grafo usato per l'esplorazione
         /// </summary>
@@ -85,35 +96,56 @@ namespace SARLib.SARPlanner
                 FCost = 0;
             }
         }
-        public abstract APlan ComputePlan(IPoint start, IPoint goal, IHeuristic heuristic);        
+        public abstract APlan ComputePlan(IPoint start, IHeuristic heuristic);//il goal viene calcolato internamente  
     }
     #endregion
 
-    public class AStar_Planner : Planner
+    public class AStarPlanner : Planner
     {
-        private IGrid _environment;
+        private SARGrid _environment;
         private IHeuristic _heuristic;
-        //Provvisori
-        //private APoint _start;
-        //private APoint _goal;
 
-        public AStar_Planner(IGrid env)
+        public AStarPlanner(SARGrid env)
         {
             _environment = env;
         }
 
-        public override APlan ComputePlan(IPoint start, IPoint goal, IHeuristic heuristic)
+        public override APlan ComputePlan(IPoint start, IHeuristic heuristic)
         {
-            //imposto euristica
+            //imposto funzione di costo euristica
             _heuristic = heuristic;
 
+
+            ///COMPONENTE DI SIMULAZIONE
+            ///1)Definizione della strategia per la selezione del goal (nodo con max(Confidence)) 
+            ///2)Costruire simulatore come classe esterna; il simulatore ad ogni ciclo chiamerà il metodo ComputePlan
+            ///     passando la posizione attuale e la funzione di costo euristica
+
+            //calcolo il nodo della griglia con Confidence massima
+            var maxPoint = _environment._grid[0, 0];
+            foreach (var node in _environment._grid)
+            {
+                if (node.Confidence >= maxPoint.Confidence)
+                    maxPoint = node;
+            }
+
+            //imposto goal
+            var goal = maxPoint;
+            ///END
+            
             //calcolo percorso ottimo
             var path = FindPath(start, goal);
 
             //estraggo il piano
             return (new PlanningResult(path, null));
         }
-        
+
+        /// <summary>
+        /// Tramite algoritmo A* calcola il percorso ottimo per il goal
+        /// </summary>
+        /// <param name="start"></param>
+        /// <param name="goal"></param>
+        /// <returns></returns>
         private List<IPoint> FindPath(IPoint start, IPoint goal)
         {
             List<Node> openNodes = new List<Node>();//nodi valutati

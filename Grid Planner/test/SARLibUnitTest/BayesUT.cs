@@ -7,10 +7,17 @@ using SARLib.SAREnvironment;
 using System.Diagnostics;
 
 namespace SARLibUnitTest
-{
+{    
     [TestClass]
     public class BayesUT
     {
+        private void DebugConsolePrint(SARViewer viewer, SARGrid environment)
+        {
+            viewer = new SARViewer(environment);
+            viewer.DisplayProperty(SARViewer.SARPointAttributes.Confidence);
+            viewer.DisplayProperty(SARViewer.SARPointAttributes.Danger);
+            //updatedGrid.SaveToFile(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest");
+        }
 
         [TestMethod]
         public void FilterSingleInput()
@@ -73,12 +80,7 @@ namespace SARLibUnitTest
             Assert.AreEqual(0.769.ToString("N3"), falseTarget.Confidence.ToString("N3"));
 
             //DEBUG
-            //visualizzo la griglia aggiornata
-            viewer = new SARViewer(updatedGrid);
-            viewer.DisplayProperty(SARViewer.SARPointAttributes.Confidence);
-            viewer.DisplayProperty(SARViewer.SARPointAttributes.Danger);
-            //updatedGrid.SaveToFile(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest");
-
+            DebugConsolePrint(viewer, updatedGrid);
         }
 
         [TestMethod]
@@ -107,16 +109,11 @@ namespace SARLibUnitTest
             //aggiorno la griglia
             var updatedGrid = bayes.UpdateConfidence(envGrid, falseTarget);
 
-            //Assert.AreEqual(0.759.ToString("N3"), trueTarget.Confidence.ToString("N3"));
-            //Assert.AreEqual(0.059.ToString("N3"), falseTarget.Confidence.ToString("N3"));
+            Assert.AreEqual(0.841.ToString("N3"), trueTarget.Confidence.ToString("N3"));
+            Assert.AreEqual(0.059.ToString("N3"), falseTarget.Confidence.ToString("N3"));
 
             //DEBUG
-            //visualizzo la griglia aggiornata
-            viewer = new SARViewer(updatedGrid);
-            viewer.DisplayProperty(SARViewer.SARPointAttributes.Confidence);
-            viewer.DisplayProperty(SARViewer.SARPointAttributes.Danger);
-            //updatedGrid.SaveToFile(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest");
-
+            DebugConsolePrint(viewer, updatedGrid);
         }
     }
 }

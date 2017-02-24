@@ -145,7 +145,8 @@ namespace SARLib.Toolbox
             private Func<double, double, int, double> PosDeltaProp = delegate (double Pk, double dPn, int distance)
             {
                 var norm = Math.Abs(dPn / Math.Sqrt(distance));
-                return Pk - (Pk * norm);
+                return Pk - Pk * norm;
+                //return Pk - (1 - Pk) * (norm);
             };
 
             #endregion
