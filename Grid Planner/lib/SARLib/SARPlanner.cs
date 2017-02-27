@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using SARLib.SAREnvironment;
+using SARLib.SARMission;
 
 namespace SARLib.SARPlanner
 {
@@ -21,63 +22,32 @@ namespace SARLib.SARPlanner
     /// </summary>
     public interface IUtilityFunction
     {
-        double EvaluateUtility(IPoint point);
+        double ComputeUtility(IPoint point);
     }
 
     /// <summary>
     /// Strategia per la selezione del prossimo goal
+    /// sulla base della mappa di utilità
     /// </summary>
     public interface ISARStrategy
     {
-        SARPoint SelectNextTarget(SARGrid environment);
+        SARPoint SelectNextTarget(SortedDictionary<SARPoint, double> utilityMap);
     }
 
-    public interface IAction
-    {
-        string ToString();
-    }
 
     #region PLAN
-    public abstract class APlan
+
+    public interface ISARRoute
     {
-        public List<IAction> Plan { get; } //lista delle azioni da compiere
-        public List<IPoint> Path { get; } //lista dei punti della griglia da visitare
-        public SearchLogger.SearchLog SearchEngineLog { get; }              
-
-        /// <summary>
-        /// Adapter per SARLib.SaveToFile
-        /// </summary>
-        /// <param name="destinationPath"></param>
-        /// <returns></returns>
-        public string SaveToFile(string destinationPath) //estrarre in classe dedicata
-        {
-            return SARLib.Toolbox.Saver.SaveToFile(this, destinationPath, ".json");
-        }
-        //deserializza la classe
-        public APlan LoadFromFile(string path) 
-        {            
-            string plan = File.ReadAllText(path);
-            return JsonConvert.DeserializeObject<APlan>(plan);
-        }
+        List<SARPoint> Route { get; set; }
+        //string SaveToFile(string destination);
+        //ISARPlan LoadFromFile(string source);
     }
-    internal class PlanningResult : APlan
+    public class SARRoute : ISARRoute
     {
-        private List<IAction> _plan;
-        private List<IPoint> _path;
-        private SearchLogger.SearchLog _log;
-
-        internal PlanningResult(List<IPoint> path, SearchLogger logger)
-        {
-            _path = path;
-            _log = logger.Log;
-            _plan = ExtractPlan(_path);
-        }
-
-        private List<IAction> ExtractPlan(List<IPoint> path)
-        {
-            throw new NotImplementedException();
-        }
+        public List<SARPoint> Route { get; set; }
     }
+    
     #endregion
 
     #region PLANNER
@@ -91,13 +61,39 @@ namespace SARLib.SARPlanner
     ///     1.4- Routine di aggiornamento della mappa
     /// 2- Applicare A* per trovare il percorso ottimo dalla posizione attuale fino al goal
     /// </summary>
-    public interface IPlanner
+    public interface ISARMissionPlanner
     {
-        APlan ComputePlan(IPoint start, ICostFunction heuristic); //il goal viene calcolato internamente       
+        ISARMission GenerateMission();
+        void PlannerSetUp(SARGrid environment, SARPoint entryPoint, IUtilityFunction utilityFunc, ICostFunction costFunc, ISARStrategy strategy);
     }
 
-    public abstract class Planner : IPlanner
-    {        
+    public abstract class SARPlanner : ISARMissionPlanner
+    {
+        //campi per setup pianificatore        
+        public SARGrid _environment;
+        public IPoint _start;
+        public IUtilityFunction _utilityFunc;
+        public ICostFunction _costFunc;
+        public ISARStrategy _strategy;
+
+        //campi per creazione SARMission
+        public ISARRoute _route;
+        public List<IPoint> _goals;
+
+        public abstract ISARMission GenerateMission();
+
+        public void PlannerSetUp(SARGrid environment, SARPoint entryPoint, IUtilityFunction utilityFunc, ICostFunction costFunc, ISARStrategy strategy)
+        {
+            _environment = environment;
+            _start = entryPoint;
+            _utilityFunc = utilityFunc;
+            _costFunc = costFunc;
+            _strategy = strategy;
+
+            _route = null;
+            _goals = environment._realTargets;
+        }
+
         /// <summary>
         /// Rappresenta un nodo del grafo usato per l'esplorazione
         /// </summary>
@@ -113,58 +109,82 @@ namespace SARLib.SARPlanner
                 GCost = double.MaxValue;
                 FCost = 0;
             }
-        }
-        public abstract APlan ComputePlan(IPoint start, ICostFunction heuristic);//il goal viene calcolato internamente  
+        }        
     }
     #endregion
-
-    public class AStarPlanner : Planner
+       
+    public class SARMissionSimulator
     {
-        private SARGrid _environment;
-        private ICostFunction _heuristic;
+        ///SIMULATORE
+        ///0) chiamata al pianificatore
+        ///1) esecuzione primo spostamento
+        ///2) lettura parametri cella next e aggiornamento distribuzione Confidence sulla griglia
+        ///3) se (next != goal) allora ripetere dal punto 1
+        ///4) se (next == goal) allora genera (e salva) SARMission
+    }
 
-        public AStarPlanner(SARGrid env)
-        {
-            _environment = env;
-        }
+    public class SARMissionPlanner : SARPlanner
+    {
+        public override ISARMission GenerateMission()
+        {            
+            ///PIANIFICATORE
+            ///1) creazione mappa valore utilità delle celle (funzione utilità sulla griglia)
+            ///2) selezione del goal (massima utilità)
+            ///3) calcolo del percorso dalla posizione attuale al goal tramite A*          
+            
+            //adapter
+            var _currentPos = _start;
 
-        public override APlan ComputePlan(IPoint start, ICostFunction heuristic)
-        {
-            //imposto funzione di costo euristica
-            _heuristic = heuristic;
+            //1) creazione mappa di utilità
+            SortedDictionary<SARPoint, double> _utilityMap = new SortedDictionary<SARPoint, double>();
+            BuildUtilityMap(_utilityMap, _utilityFunc);
 
+            //2) seleziono il goal
+            var _currentGoal = _strategy.SelectNextTarget(_utilityMap);
 
-            ///COMPONENTE DI SIMULAZIONE
-            ///1)Definizione della strategia per la selezione del goal (nodo con max(Confidence)) 
-            ///2)Costruire simulatore come classe esterna; il simulatore ad ogni ciclo chiamerà il metodo ComputePlan
-            ///     passando la posizione attuale e la funzione di costo euristica
+            //3) calcolo del percorso per il goal attuale
+            List<IPoint> route = FindRoute(_currentPos, _currentGoal);
 
-            //calcolo il nodo della griglia con Confidence massima
-            var maxPoint = _environment._grid[0, 0];
-            foreach (var node in _environment._grid)
+            //conversione in SARRoute
+            var sarRoute = new SARRoute();
+            foreach (var p in route)
             {
-                if (node.Confidence >= maxPoint.Confidence)
-                    maxPoint = node;
+                sarRoute.Route.Add(_environment.GetPoint(p.X, p.Y));
             }
 
-            //imposto goal
-            var goal = maxPoint;
-            ///END
-            
-            //calcolo percorso ottimo
-            var path = FindPath(start, goal);
+            //genero missione
+            var mission = new SARMission.SARMission(_environment, sarRoute, _start);
 
-            //estraggo il piano
-            return (new PlanningResult(path, null));
+            return mission;
         }
 
         /// <summary>
-        /// Tramite algoritmo A* calcola il percorso ottimo per il goal
+        /// Routine di aggiornamento della mappa di utilità relativa alle posizioni
+        /// dell'ambiente di ricerca
         /// </summary>
-        /// <param name="start"></param>
-        /// <param name="goal"></param>
+        /// <param name="map"></param>
+        /// <param name="function"></param>
+        private void BuildUtilityMap(SortedDictionary<SARPoint, double> map, IUtilityFunction function)
+        {
+            var mapTmp = new SortedDictionary<SARPoint, double>();
+            foreach (var cell in map)
+            {
+                mapTmp.Add(cell.Key, function.ComputeUtility(cell.Key));
+            }
+
+            //gli elementi vengono posti in ordine decrescente rispetto al valore di utilità 
+            mapTmp.OrderByDescending(x => x.Value);
+
+            map = mapTmp;            
+        }
+
+        /// <summary>
+        /// Applicazione di A* per il calcolo del percorso
+        /// </summary>
+        /// <param name="currentPos"></param>
+        /// <param name="currentGoal"></param>
         /// <returns></returns>
-        private List<IPoint> FindPath(IPoint start, IPoint goal)
+        private List<IPoint> FindRoute(IPoint start, IPoint goal)
         {
             List<Node> openNodes = new List<Node>();//nodi valutati
             List<Node> closedNodes = new List<Node>();//nodi valutati ed espansi
@@ -172,9 +192,9 @@ namespace SARLib.SARPlanner
 
             #region Funzioni
             Func<Node> _minFCostNode = delegate ()
-                {
-                    return (openNodes.Select(x => Tuple.Create(x, x.FCost))).Min().Item1;
-                };
+            {
+                return (openNodes.Select(x => Tuple.Create(x, x.FCost))).Min().Item1;
+            };
             Func<Node, List<IPoint>> _pathToPoint = delegate (Node endPoint)
             {
                 var path = new List<IPoint>
@@ -197,13 +217,13 @@ namespace SARLib.SARPlanner
                 return Math.Abs(p1.X - p2.X) + Math.Abs(p1.Y - p2.Y);
             };
             #endregion
-            
+
             //inizializzo frontiera
             var s = new Node(start)
             {
                 GCost = 0
             };
-            s.FCost = _heuristic.EvaluateCost(s.point, goal);
+            s.FCost = _costFunc.EvaluateCost(s.point, goal);
             openNodes.Add(s);
 
             //espansione
@@ -242,7 +262,7 @@ namespace SARLib.SARPlanner
                             {
                                 cameFrom[nearNode] = current;
                                 nearNode.GCost = newGCost;
-                                nearNode.FCost = nearNode.GCost + _heuristic.EvaluateCost(nearPoint, goal);
+                                nearNode.FCost = nearNode.GCost + _costFunc.EvaluateCost(nearPoint, goal);
                             }
                         }
                     }
@@ -251,6 +271,7 @@ namespace SARLib.SARPlanner
             }
             return null;
         }
+                
     }
 
     public class SearchLogger
@@ -281,27 +302,5 @@ namespace SARLib.SARPlanner
             private double totalTime;
             private int totalOpenNodes;
         }
-    }
-
-    //class Move : IPlanningAction
-    //{
-    //    private IPoint _start, _end;
-
-    //    public Move(IPoint start, IPoint end)
-    //    {
-    //        _start = start;
-    //        _end = end;
-    //    }
-
-    //    //public void Execute()
-    //    //{
-    //    //    throw new NotImplementedException();
-    //    //}
-
-    //    public override string ToString()
-    //    {
-    //        return String.Format("Move {0} -> {1}", _start, _end);
-    //    }
-    //}
-
+    }    
 }

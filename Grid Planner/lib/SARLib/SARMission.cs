@@ -11,8 +11,9 @@ namespace SARLib.SARMission
         string SaveToFile(string dstPath);
         ISARMission LoadFromFile(string srcPath);
 
+        //Proprietà Missione SAR
         SARGrid Environment { get; set; }
-        APlan Plan { get; set; }
+        ISARRoute Route { get; set; }
 
         IPoint Start { get; set; }
         List<IPoint> Goals { get; set; }
@@ -26,7 +27,7 @@ namespace SARLib.SARMission
     {
         #region Proprietà
         public SARGrid Environment { get; set; }
-        public APlan Plan { get; set; }
+        public ISARRoute Route { get; set; }
         public IPoint Start { get; set; }
         public List<IPoint> Goals { get; set; }
         #endregion
@@ -34,10 +35,16 @@ namespace SARLib.SARMission
         #region Costruttori
         //costruttore usato dal serializzatore JSON
         public SARMission() { }
-        public SARMission(SARGrid env, APlan searchPlan, IPoint start)
+        /// <summary>
+        /// Costruttore principale
+        /// </summary>
+        /// <param name="env"></param>
+        /// <param name="route"></param>
+        /// <param name="start"></param>
+        public SARMission(SARGrid env, SARRoute route, IPoint start)
         {
             Environment = env;
-            Plan = searchPlan;
+            Route = route;
             Start = start;
             Goals = env._realTargets;
         }
@@ -45,7 +52,7 @@ namespace SARLib.SARMission
         public SARMission(int envRow, int envCol, int numTargets)
         {
             Environment = new SARGrid(envCol, envRow);
-            Plan = null;
+            Route = null;
             Start = null;
             Goals = new List<IPoint>(numTargets);
 
