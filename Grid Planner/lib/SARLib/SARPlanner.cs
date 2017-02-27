@@ -11,9 +11,17 @@ namespace SARLib.SARPlanner
     /// <summary>
     /// Funzione costo del percorso
     /// </summary>
-    public interface IHeuristic
+    public interface ICostFunction
     {
         double EvaluateCost(IPoint point, IPoint goal);
+    }
+
+    /// <summary>
+    /// Valuta l'appetibilità a priori di una posizione
+    /// </summary>
+    public interface IUtilityFunction
+    {
+        double EvaluateUtility(IPoint point);
     }
 
     /// <summary>
@@ -32,8 +40,8 @@ namespace SARLib.SARPlanner
     #region PLAN
     public abstract class APlan
     {
-        public List<IAction> Plan { get; }
-        public List<IPoint> Path { get; }
+        public List<IAction> Plan { get; } //lista delle azioni da compiere
+        public List<IPoint> Path { get; } //lista dei punti della griglia da visitare
         public SearchLogger.SearchLog SearchEngineLog { get; }              
 
         /// <summary>
@@ -73,9 +81,19 @@ namespace SARLib.SARPlanner
     #endregion
 
     #region PLANNER
+    /// <summary>
+    /// La pianificazione si suddivide nelle seguenti fasi:
+    /// 1- Analisi dell'ambiente (SARGrid) e selezione del goal
+    ///     1.1- Implementare Funzione Utilità U() per la stima della qualità di un punto (SARPoint)
+    ///          in base ai livelli Danger e Confidence nell'intorno
+    ///     1.2- Creazione mappa di utilità (metodi per logging)
+    ///     1.3- Routine di selezione punto "migliore"
+    ///     1.4- Routine di aggiornamento della mappa
+    /// 2- Applicare A* per trovare il percorso ottimo dalla posizione attuale fino al goal
+    /// </summary>
     public interface IPlanner
     {
-        APlan ComputePlan(IPoint start, IHeuristic heuristic); //il goal viene calcolato internamente       
+        APlan ComputePlan(IPoint start, ICostFunction heuristic); //il goal viene calcolato internamente       
     }
 
     public abstract class Planner : IPlanner
@@ -96,21 +114,21 @@ namespace SARLib.SARPlanner
                 FCost = 0;
             }
         }
-        public abstract APlan ComputePlan(IPoint start, IHeuristic heuristic);//il goal viene calcolato internamente  
+        public abstract APlan ComputePlan(IPoint start, ICostFunction heuristic);//il goal viene calcolato internamente  
     }
     #endregion
 
     public class AStarPlanner : Planner
     {
         private SARGrid _environment;
-        private IHeuristic _heuristic;
+        private ICostFunction _heuristic;
 
         public AStarPlanner(SARGrid env)
         {
             _environment = env;
         }
 
-        public override APlan ComputePlan(IPoint start, IHeuristic heuristic)
+        public override APlan ComputePlan(IPoint start, ICostFunction heuristic)
         {
             //imposto funzione di costo euristica
             _heuristic = heuristic;

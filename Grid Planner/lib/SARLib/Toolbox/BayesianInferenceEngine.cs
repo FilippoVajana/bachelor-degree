@@ -107,7 +107,7 @@ namespace SARLib.Toolbox
                 var prior = environment.GetPoint(sensingPoint.X, sensingPoint.Y).Confidence;
 
                 ///2- lettura presenza target D (lista targets)
-                var sensorRead = (environment._targets.Contains(sensingPoint)) ? 1 : 0; //OMG!! ;(
+                var sensorRead = (environment._realTargets.Contains(sensingPoint)) ? 1 : 0; //OMG!! ;(
 
                 ///3- calcolo posterior p(H|D) con Bayes
                 var posterior = Filter(sensorRead, prior);
@@ -124,11 +124,14 @@ namespace SARLib.Toolbox
 
                 foreach (var cell in envGrid)
                 {
-                    //calcolo entità aggiornamento                    
-                    double post = ComputePosteriorPropagation(cell, delta, environment.Distance(sensingPoint, cell));
+                    if (cell.Type != SARPoint.PointTypes.Obstacle)
+                    {
+                        //calcolo entità aggiornamento                    
+                        double post = ComputePosteriorPropagation(cell, delta, environment.Distance(sensingPoint, cell));
 
-                    //attuo l'aggiornamento della probabilità                    
-                    environment.GetPoint(cell.X, cell.Y).Confidence = post; //provvisorio - portare a double/decimal
+                        //attuo l'aggiornamento della probabilità                    
+                        environment.GetPoint(cell.X, cell.Y).Confidence = post; //provvisorio - portare a double/decimal 
+                    }
                 }
                 
                 return environment;

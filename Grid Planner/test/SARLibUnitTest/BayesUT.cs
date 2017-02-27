@@ -51,7 +51,7 @@ namespace SARLibUnitTest
         }
 
         [TestMethod]
-        public void PositiveConfidenceGridPropagation()
+        public void PositiveConfidenceDeltaPropagation()
         {
             //var bayesEngine = new BayesEngine();
             var bayes = new BayesEngine.BayesFilter(0.2, new BayesEngine.Logger());
@@ -84,7 +84,7 @@ namespace SARLibUnitTest
         }
 
         [TestMethod]
-        public void NegativeConfidenceGridPropagation()
+        public void NegativeConfidenceDeltaPropagation()
         {
             //var bayesEngine = new BayesEngine();
             var bayes = new BayesEngine.BayesFilter(0.2, new BayesEngine.Logger());
@@ -103,14 +103,63 @@ namespace SARLibUnitTest
             p = envGrid.GetPoint(4, 9);
             var falseTarget = envGrid.BuildSARPoint(p.X, p.Y, prior, p.Danger, SARPoint.PointTypes.Clear);
 
+            //DEBUG
             //visualizzo la griglia prima dell'aggiornamento
-            viewer.DisplayProperty(SARViewer.SARPointAttributes.Confidence);
+            DebugConsolePrint(viewer, envGrid);
 
             //aggiorno la griglia
             var updatedGrid = bayes.UpdateConfidence(envGrid, falseTarget);
 
             Assert.AreEqual(0.841.ToString("N3"), trueTarget.Confidence.ToString("N3"));
             Assert.AreEqual(0.059.ToString("N3"), falseTarget.Confidence.ToString("N3"));
+
+            //DEBUG
+            DebugConsolePrint(viewer, updatedGrid);
+        }
+
+        [TestMethod]
+        public void PositiveConfidenceDeltaPropagationGrid()
+        {
+            //var bayesEngine = new BayesEngine();
+            var bayes = new BayesEngine.BayesFilter(0.2, new BayesEngine.Logger());
+            var prior = 0.8;
+
+            //creo ambiente
+            var envGrid = new SARGrid(5, 10);
+            envGrid.RandomizeGrid(10, 25);
+            var viewer = new SARViewer(envGrid);
+            //Debug.WriteLine(envGrid.ConvertToConsoleString());
+
+            //imposto punto di sensing #1
+            var p = envGrid.GetPoint(0, 5);
+            var trueTarget = envGrid.BuildSARPoint(p.X, p.Y, prior, p.Danger, SARPoint.PointTypes.Target);
+
+            //aggiorno la griglia
+            var updatedGrid = bayes.UpdateConfidence(envGrid, trueTarget);
+
+            //DEBUG
+            DebugConsolePrint(viewer, updatedGrid);
+        }
+
+        [TestMethod]
+        public void NegativeConfidenceDeltaPropagationGrid()
+        {
+            //var bayesEngine = new BayesEngine();
+            var bayes = new BayesEngine.BayesFilter(0.2, new BayesEngine.Logger());
+            var prior = 0.8;
+
+            //creo ambiente
+            var envGrid = new SARGrid(5, 10);
+            envGrid.RandomizeGrid(10, 25);
+            var viewer = new SARViewer(envGrid);
+            //Debug.WriteLine(envGrid.ConvertToConsoleString());
+
+            //imposto punto di sensing #1
+            var p = envGrid.GetPoint(2, 5);
+            var falseTarget = envGrid.BuildSARPoint(p.X, p.Y, prior, p.Danger, SARPoint.PointTypes.Clear);
+
+            //aggiorno la griglia
+            var updatedGrid = bayes.UpdateConfidence(envGrid, falseTarget);
 
             //DEBUG
             DebugConsolePrint(viewer, updatedGrid);

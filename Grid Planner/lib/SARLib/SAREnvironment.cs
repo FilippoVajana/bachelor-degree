@@ -143,7 +143,7 @@ namespace SARLib.SAREnvironment
         ///rappresenta sia la topografia dell'ambiente che la distribuzione di probabilità degli obiettivi
         public SARPoint[,] _grid;
         ///rappresenta le posizioni reali dei target
-        public List<IPoint> _targets = new List<IPoint>();
+        public List<IPoint> _realTargets = new List<IPoint>();
 
         #region Costruttori
         /// <summary>
@@ -209,7 +209,7 @@ namespace SARLib.SAREnvironment
             _grid[x, y] = point;
             //aggiungo il punto alla lista dei target reali
             if (type == SARPoint.PointTypes.Target)
-                _targets.Add(point);
+                _realTargets.Add(point);
 
             //propago Confidence ai punti adiacenti
             var neighbors = this.GetNeighbors(point);
@@ -248,7 +248,7 @@ namespace SARLib.SAREnvironment
 
             if (_grid != null)
             {
-                for (int r = 0; r < _numRow; r++)
+                for (int r = _numRow - 1; r >= 0; r--)
                 {
                     for (int c = 0; c < _numCol; c++)
                     {
@@ -269,7 +269,14 @@ namespace SARLib.SAREnvironment
 
             while (iterCount < shuffles)
             {
-                _grid[rnd.Next(_numCol), rnd.Next(_numRow)].Type = (SARPoint.PointTypes)rnd.Next(types.Length);
+                var point = _grid[rnd.Next(_numCol), rnd.Next(_numRow)];
+                point.Type = (SARPoint.PointTypes)rnd.Next(types.Length);
+
+                if (true)
+                {
+                    var p = BuildSARPoint(point.X, point.Y, rnd.NextDouble(), rnd.NextDouble(), point.Type);
+                    _grid[point.X, point.Y] = p;
+                }
                 iterCount++;
             }
         }
