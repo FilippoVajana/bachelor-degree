@@ -15,7 +15,7 @@ namespace SARLib.SARMission
         SARGrid Environment { get; set; }
         ISARRoute Route { get; set; }
 
-        IPoint Start { get; set; }
+        //IPoint Start { get; set; }
         List<IPoint> Goals { get; set; }
     }
 
