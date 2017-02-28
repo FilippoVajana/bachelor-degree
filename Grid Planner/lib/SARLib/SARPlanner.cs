@@ -14,7 +14,7 @@ namespace SARLib.SARPlanner
     /// </summary>
     public interface ICostFunction
     {
-        double EvaluateCost(IPoint point, IPoint goal);
+        double EvaluateCost(SARPoint point, SARPoint goal);
     }
 
     /// <summary>
@@ -22,16 +22,16 @@ namespace SARLib.SARPlanner
     /// </summary>
     public interface IUtilityFunction
     {
-        double ComputeUtility(IPoint point);
+        double ComputeUtility(SARPoint point);
     }
 
     /// <summary>
     /// Strategia per la selezione del prossimo goal
     /// sulla base della mappa di utilità
     /// </summary>
-    public interface ISARStrategy
+    public interface IGoalSelectionStrategy
     {
-        SARPoint SelectNextTarget(SortedDictionary<SARPoint, double> utilityMap);
+        SARPoint SelectNextTarget(Dictionary<SARPoint, double> utilityMap);
     }
 
 
@@ -47,42 +47,37 @@ namespace SARLib.SARPlanner
     {
         public List<SARPoint> Route { get; set; }
     }
-    
+
     #endregion
 
-    #region PLANNER
-    /// <summary>
-    /// La pianificazione si suddivide nelle seguenti fasi:
-    /// 1- Analisi dell'ambiente (SARGrid) e selezione del goal
-    ///     1.1- Implementare Funzione Utilità U() per la stima della qualità di un punto (SARPoint)
-    ///          in base ai livelli Danger e Confidence nell'intorno
-    ///     1.2- Creazione mappa di utilità (metodi per logging)
-    ///     1.3- Routine di selezione punto "migliore"
-    ///     1.4- Routine di aggiornamento della mappa
-    /// 2- Applicare A* per trovare il percorso ottimo dalla posizione attuale fino al goal
-    /// </summary>
+    ///Processo calcolo Route alla ricerca del target
+    ///1) seleziono prossima posizione candidata (SELECTOR)
+    ///2) calcolo percorso fino al goal (ROUTE PLANNER)
+    ///3) eseguo la prima mossa (PLAN RUNNER)
+    ///4) lettura sensoriale + aggiornamento probabilità (ENVIRONMENT UPDATER)
+    ///5) ripeto dal passo 1 (controllo invarianza goal --> salto pianificazione)
+
+    //Pianificatore
     public interface ISARMissionPlanner
     {
         ISARMission GenerateMission();
-        void PlannerSetUp(SARGrid environment, SARPoint entryPoint, IUtilityFunction utilityFunc, ICostFunction costFunc, ISARStrategy strategy);
     }
 
-    public abstract class SARPlanner : ISARMissionPlanner
+    public class SARPlanner : ISARMissionPlanner
     {
         //campi per setup pianificatore        
         public SARGrid _environment;
         public IPoint _start;
         public IUtilityFunction _utilityFunc;
         public ICostFunction _costFunc;
-        public ISARStrategy _strategy;
+        public IGoalSelectionStrategy _strategy;
 
         //campi per creazione SARMission
         public ISARRoute _route;
         public List<IPoint> _goals;
 
-        public abstract ISARMission GenerateMission();
-
-        public void PlannerSetUp(SARGrid environment, SARPoint entryPoint, IUtilityFunction utilityFunc, ICostFunction costFunc, ISARStrategy strategy)
+        //costruttore
+        public SARPlanner(SARGrid environment, SARPoint entryPoint, IUtilityFunction utilityFunc, ICostFunction costFunc, IGoalSelectionStrategy strategy)
         {
             _environment = environment;
             _start = entryPoint;
@@ -94,6 +89,11 @@ namespace SARLib.SARPlanner
             _goals = environment._realTargets;
         }
 
+        public ISARMission GenerateMission()
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Rappresenta un nodo del grafo usato per l'esplorazione
         /// </summary>
@@ -102,36 +102,96 @@ namespace SARLib.SARPlanner
             public IPoint point;
             public double GCost { get; set; } //costo dall'origine
             public double FCost { get; set; } //costo aggregato g + h
-            
+
             public Node(IPoint point)
             {
                 this.point = point;
                 GCost = double.MaxValue;
                 FCost = 0;
             }
-        }        
-    }
-    #endregion
-       
-    public class SARMissionSimulator
-    {
-        ///SIMULATORE
-        ///0) chiamata al pianificatore
-        ///1) esecuzione primo spostamento
-        ///2) lettura parametri cella next e aggiornamento distribuzione Confidence sulla griglia
-        ///3) se (next != goal) allora ripetere dal punto 1
-        ///4) se (next == goal) allora genera (e salva) SARMission
+        }
     }
 
+    /// <summary>
+    /// Selezionatore per posizione candidata a goal
+    /// </summary>
+    class GoalSelector
+    {
+        private SARGrid _env;
+        private IUtilityFunction _util;
+        private IGoalSelectionStrategy _strategy;
+        private Dictionary<SARPoint, double> _utilMap;
+
+        public GoalSelector(SARGrid environment, IUtilityFunction utilityFunction, IGoalSelectionStrategy selectionStrategy)
+        {
+            _env = environment;
+            _util = utilityFunction;
+            _strategy = selectionStrategy;
+            _utilMap = new Dictionary<SARPoint, double>(environment._grid.Length);
+        }
+
+        public SARPoint SelectGoal()
+        {
+            //costruisco la mappa utilità dell'ambiente
+            _utilMap = BuildUtilityMap();
+            //seleziono il punto con utilità massima
+            var goal = _strategy.SelectNextTarget(_utilMap);
+
+            return goal;
+        }
+
+        private Dictionary<SARPoint, double> BuildUtilityMap()
+        {
+            Dictionary<SARPoint, double> map = new Dictionary<SARPoint, double>(_env._grid.Length);
+
+            //calcolo valore di utilità delle celle
+            foreach (var point in _env._grid)
+            {
+                var pUtility = _util.ComputeUtility(point);
+                map.Add(point, pUtility);
+            }
+
+            return map;
+        }
+    }
+    
+    class RoutePlanner
+    {
+
+    }
+
+    class PlanRunner
+    { }
+    class EnvironmentUpdater
+    { }
+
+    
+    /// <summary>
+    /// La pianificazione si suddivide nelle seguenti fasi:
+    /// 1- Analisi dell'ambiente (SARGrid) e selezione del goal
+    ///     1.1- Implementare Funzione Utilità U() per la stima della qualità di un punto (SARPoint)
+    ///          in base ai livelli Danger e Confidence nell'intorno
+    ///     1.2- Creazione mappa di utilità (metodi per logging)
+    ///     1.3- Routine di selezione punto "migliore"
+    ///     1.4- Routine di aggiornamento della mappa
+    /// 2- Applicare A* per trovare il percorso ottimo dalla posizione attuale fino al goal
+    /// </summary>
+    
+
+    //cambia nome
     public class SARMissionPlanner : SARPlanner
     {
-        public override ISARMission GenerateMission()
-        {            
+        /// <summary>
+        /// Generazione di una missione per il raggiungimento del goal
+        /// </summary>
+        /// <returns></returns>
+        public override ISARMission GenerateMission() //Rivedere implementazione
+        {
             ///PIANIFICATORE
             ///1) creazione mappa valore utilità delle celle (funzione utilità sulla griglia)
             ///2) selezione del goal (massima utilità)
             ///3) calcolo del percorso dalla posizione attuale al goal tramite A*          
-            
+
             //adapter
             var _currentPos = _start;
 
@@ -175,7 +235,7 @@ namespace SARLib.SARPlanner
             //gli elementi vengono posti in ordine decrescente rispetto al valore di utilità 
             mapTmp.OrderByDescending(x => x.Value);
 
-            map = mapTmp;            
+            map = mapTmp;
         }
 
         /// <summary>
@@ -271,9 +331,13 @@ namespace SARLib.SARPlanner
             }
             return null;
         }
-                
+
     }
 
+
+        
+
+    
     public class SearchLogger
     {
 
