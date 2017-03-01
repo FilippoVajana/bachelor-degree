@@ -44,7 +44,7 @@ namespace SARLib.Toolbox
         }
     }
 
-    class AStar : ISARSearchAlgoritm
+    public class AStar : ISARSearchAlgoritm
     {
         SARGrid _env;
         ICostFunction _costFunc;
