@@ -112,12 +112,12 @@ namespace SARLib.SARPlanner
                 CR += node.Confidence;
             }
 
-            DR = Math.Pow(DR / Area, _dExp);
+            DR = DR / Area;
             CR = Math.Pow(CR / Area, _cExp);
 
-            utility = CR / DR * L;
+            utility = CR * (Math.Pow(1 + L * DR, _dExp));
 
-            return utility;
+            return (!double.IsNaN(utility))? utility : 0;
         }
     }
 
@@ -132,6 +132,18 @@ namespace SARLib.SARPlanner
     {
         SARPoint SelectNextTarget(Dictionary<SARPoint, double> utilityMap);
     }
+
+    public class SARGoalSelector : IGoalSelectionStrategy
+    {
+        //seleziono la cella con valore di utilità massimo
+        public SARPoint SelectNextTarget(Dictionary<SARPoint, double> utilityMap)
+        {
+            var orderedMap = utilityMap.OrderByDescending(e => e.Value);
+            return orderedMap.First(e => e.Value != double.NaN).Key;
+        }
+    }
+
+
 
     public interface ISARRoute
     {
