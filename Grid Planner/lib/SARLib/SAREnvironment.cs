@@ -197,7 +197,7 @@ namespace SARLib.SAREnvironment
                 };
                 return neighbors.FindAll(x => x != null && x.Type != SARPoint.PointTypes.Obstacle).ToArray();
             }
-            return null;
+            return Array.Empty<IPoint>();
         }
 
         public SARPoint BuildSARPoint(int x, int y, double confidence, double danger, SARPoint.PointTypes type)
