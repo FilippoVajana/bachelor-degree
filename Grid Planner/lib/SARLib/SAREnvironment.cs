@@ -252,7 +252,7 @@ namespace SARLib.SAREnvironment
                 {
                     for (int c = 0; c < _numCol; c++)
                     {
-                        gridString += String.Format("{0}", _grid[c, r].PrintConsoleFriendly());
+                        gridString += String.Format(" {0} ", _grid[c, r].PrintConsoleFriendly());
                     }
                     gridString += System.Environment.NewLine;
                 }

@@ -17,6 +17,9 @@ namespace SARLib.SARMission
 
         //IPoint Start { get; set; }
         List<IPoint> Goals { get; set; }
+
+        ///aggiungere i log circa le modifiche all'ambiente
+        ///1) variazione della confidenza
     }
 
     /// <summary>
