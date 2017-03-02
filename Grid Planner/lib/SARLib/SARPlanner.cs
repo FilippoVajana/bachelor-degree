@@ -23,7 +23,7 @@ namespace SARLib.SARPlanner
     /// Funzione di costo per applicazioni SAR.
     /// Il costo viene valutato tenendo conto della sola distanza in norma Manhattan
     /// </summary>
-    class SARCostFunction : ICostFunction
+    public class SARCostFunction : ICostFunction
     {
         public double EvaluateCost(SARPoint point, SARPoint goal)
         {
@@ -47,7 +47,7 @@ namespace SARLib.SARPlanner
     /// L'utilità viene calcolata tenendo conto del rapporto Conf/Danger
     /// nell'intorno del punto
     /// </summary>
-    class SARUtilityFunction : IUtilityFunction
+    public class SARUtilityFunction : IUtilityFunction
     {
         int _radius = 1;
         double _dExp;
@@ -65,7 +65,8 @@ namespace SARLib.SARPlanner
             _cExp = confidenceExp;
         }
 
-        public double ComputeUtility(SARPoint envPoint, SARPoint currentPoint, SARGrid environment)
+        //modificare rendendo parametrico rispetto alla formula per il calcolo della utilità
+        public double ComputeUtility(SARPoint point, SARPoint currentPos, SARGrid environment)
         {
             //Creazione set per i nodi considerati nella valutazione
             HashSet<SARPoint> evalNodes = new HashSet<SARPoint>();
@@ -73,11 +74,13 @@ namespace SARLib.SARPlanner
             double utility = 0;
 
             //scansione l'area circostante
-            var nodeToScan = new HashSet<SARPoint>() { envPoint }; //nodi da espandere
-            while (nodeToScan.Count > 0 && _radius > 0)
+            var nodeToScan = new HashSet<SARPoint>() { point }; //nodi da espandere
+            var nodeScanned = new HashSet<SARPoint>();
+            while (nodeToScan.Count > 0)
             {
                 var n = nodeToScan.First();
                 nodeToScan.Remove(n);
+                nodeScanned.Add(n);
 
                 //ottengo nodi limitrofi
                 var neighbors = environment.GetNeighbors(n);
@@ -85,19 +88,23 @@ namespace SARLib.SARPlanner
                 //aggiorno set di nodi da valutare
                 foreach (var near in neighbors)
                 {
-                    evalNodes.Add(near as SARPoint);
-                    nodeToScan.Add(near as SARPoint);
+                    if (environment.Distance(near, point) <= _radius) //limito espansione della frontiera
+                    {
+                        evalNodes.Add(near as SARPoint);
+                        if (!nodeScanned.Contains(near))
+                            nodeToScan.Add(near as SARPoint);
+                    }
                 }
 
                 //decremento contatore
-                _radius--;
+                //_radius--;
             }
 
             //calcolo parametri funzione di utilità
             double DR = 0;
             double CR = 0;
             int Area = evalNodes.Count;
-            double L = manhattan_distance(currentPoint, envPoint);
+            double L = manhattan_distance(currentPos, point);
 
             foreach (var node in evalNodes)
             {
@@ -108,7 +115,7 @@ namespace SARLib.SARPlanner
             DR = Math.Pow(DR / Area, _dExp);
             CR = Math.Pow(CR / Area, _cExp);
 
-            utility = DR / CR * L;
+            utility = CR / DR * L;
 
             return utility;
         }
