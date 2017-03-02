@@ -13,9 +13,9 @@ namespace SARLibUnitTest
     {
         private void DebugConsolePrint(SARViewer viewer, SARGrid environment)
         {
-            viewer = new SARViewer(environment);
-            viewer.DisplayProperty(SARViewer.SARPointAttributes.Confidence);
-            viewer.DisplayProperty(SARViewer.SARPointAttributes.Danger);
+            viewer = new SARViewer();
+            viewer.DisplayProperty(environment, SARViewer.SARPointAttributes.Confidence);
+            viewer.DisplayProperty(environment, SARViewer.SARPointAttributes.Danger);
             //updatedGrid.SaveToFile(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest");
         }
 
@@ -59,7 +59,7 @@ namespace SARLibUnitTest
 
             //creo ambiente
             var envGrid = new SARGrid(5, 10);
-            var viewer = new SARViewer(envGrid);
+            var viewer = new SARViewer();
             //Debug.WriteLine(envGrid.ConvertToConsoleString());
 
             //imposto punto di sensing #1
@@ -71,7 +71,7 @@ namespace SARLibUnitTest
             var falseTarget = envGrid.BuildSARPoint(p.X, p.Y, prior, p.Danger, SARPoint.PointTypes.Clear);            
             
             //visualizzo la griglia prima dell'aggiornamento
-            viewer.DisplayProperty(SARViewer.SARPointAttributes.Confidence);
+            viewer.DisplayProperty(envGrid, SARViewer.SARPointAttributes.Confidence);
 
             //aggiorno la griglia
             var updatedGrid = bayes.UpdateConfidence(envGrid, trueTarget);
@@ -92,7 +92,7 @@ namespace SARLibUnitTest
 
             //creo ambiente
             var envGrid = new SARGrid(5, 10);
-            var viewer = new SARViewer(envGrid);
+            var viewer = new SARViewer();
             //Debug.WriteLine(envGrid.ConvertToConsoleString());
 
             //imposto punto di sensing #1
@@ -127,7 +127,7 @@ namespace SARLibUnitTest
             //creo ambiente
             var envGrid = new SARGrid(5, 10);
             envGrid.RandomizeGrid(10, 25);
-            var viewer = new SARViewer(envGrid);
+            var viewer = new SARViewer();
             //Debug.WriteLine(envGrid.ConvertToConsoleString());
 
             //imposto punto di sensing #1
@@ -151,7 +151,7 @@ namespace SARLibUnitTest
             //creo ambiente
             var envGrid = new SARGrid(5, 10);
             envGrid.RandomizeGrid(10, 25);
-            var viewer = new SARViewer(envGrid);
+            var viewer = new SARViewer();
             //Debug.WriteLine(envGrid.ConvertToConsoleString());
 
             //imposto punto di sensing #1

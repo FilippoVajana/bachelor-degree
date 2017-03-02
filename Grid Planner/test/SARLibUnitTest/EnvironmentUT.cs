@@ -7,7 +7,33 @@ namespace SARLibUnitTest
 {
     [TestClass]
     public class EnvironmentUT
-    {        
+    {
+        const int GRID_ROWS = 5;
+        const int GRID_COLUMNS = 8;
+        const int GRID_SEED = 10;
+        const int RND_SHUFFLE = 50;
+
+        SARGrid GRID = null;
+        SARViewer VIEWER = null;
+
+        #region Metodi ausiliari
+        private SARGrid GetRndGrid()
+        {
+            var grid = new SARGrid(GRID_COLUMNS, GRID_ROWS);
+            grid.RandomizeGrid(GRID_SEED, RND_SHUFFLE);
+            return grid;
+        }
+        #endregion
+
+        //GRIGLIA 8x5 -> (7x4 Max)
+        [TestInitialize]
+        public void TestInitialize()
+        {
+            GRID = GetRndGrid();
+            VIEWER = new SARViewer();
+            var gridStr = VIEWER.DisplayEnvironment(GRID);
+        }
+
         [TestMethod]
         public void GetValidPoint()
         {
@@ -64,10 +90,10 @@ namespace SARLibUnitTest
         [TestMethod]
         public void RetrieveNeighborsRndGrid()
         {
-            var grid = new SARGrid(8, 5);
-            grid.RandomizeGrid(5, 50);
+            var grid = GRID;
+            //grid.RandomizeGrid(5, 50);
 
-            var gridString = grid.ConvertToConsoleString();
+            var gridString = VIEWER.DisplayEnvironment(GRID); //grid.ConvertToConsoleString();
 
             var n = grid.GetNeighbors(grid.GetPoint(0, 0));
             Assert.AreEqual(2, n.Length);
@@ -82,8 +108,8 @@ namespace SARLibUnitTest
         [TestMethod]
         public void FileIO()
         {
-            var savedGrid = new SARGrid(4, 8);
-            savedGrid.RandomizeGrid(5, 4);
+            var savedGrid = GRID;
+            //savedGrid.RandomizeGrid(5, 4);
 
 #if !DEBUG
             string outFilePath = savedGrid.SaveToFile(Directory.GetCurrentDirectory()); 
@@ -94,7 +120,7 @@ namespace SARLibUnitTest
             Assert.IsNotNull(outFilePath);
 
             var loadedGrid = new SARGrid(outFilePath);
-            Assert.AreEqual(savedGrid.ConvertToConsoleString(), loadedGrid.ConvertToConsoleString());
+            Assert.AreEqual(VIEWER.DisplayEnvironment(savedGrid), VIEWER.DisplayEnvironment(loadedGrid));
         }
 
         [TestMethod]
