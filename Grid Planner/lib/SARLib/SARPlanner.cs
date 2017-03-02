@@ -10,6 +10,8 @@ using SARLib.Toolbox;
 
 namespace SARLib.SARPlanner
 {
+
+    #region Funzione di costo
     /// <summary>
     /// Funzione costo del percorso
     /// </summary>
@@ -17,14 +19,103 @@ namespace SARLib.SARPlanner
     {
         double EvaluateCost(SARPoint point, SARPoint goal);
     }
+    /// <summary>
+    /// Funzione di costo per applicazioni SAR.
+    /// Il costo viene valutato tenendo conto della sola distanza in norma Manhattan
+    /// </summary>
+    class SARCostFunction : ICostFunction
+    {
+        public double EvaluateCost(SARPoint point, SARPoint goal)
+        {
+            var cost = Math.Abs(point.X - goal.X) + Math.Abs(point.Y - goal.Y);
+            return cost;
+        }
+    }
+    #endregion
+
+    #region Funzione di utilità
 
     /// <summary>
     /// Valuta l'appetibilità a priori di una posizione
     /// </summary>
     public interface IUtilityFunction
     {
-        double ComputeUtility(SARPoint point);
+        double ComputeUtility(SARPoint envPoint, SARPoint currentPoint, SARGrid environment);
     }
+    /// <summary>
+    /// Funzione di utilità per applicazioni SAR.
+    /// L'utilità viene calcolata tenendo conto del rapporto Conf/Danger
+    /// nell'intorno del punto
+    /// </summary>
+    class SARUtilityFunction : IUtilityFunction
+    {
+        int _radius = 1;
+        double _dExp;
+        double _cExp;
+        Func<IPoint, IPoint, double> manhattan_distance = delegate (IPoint a, IPoint b)
+        {
+            var distance = Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y);
+            return distance;
+        };
+
+        public SARUtilityFunction(int evaluationRadius, double dangerExp, double confidenceExp)
+        {
+            _radius = evaluationRadius;
+            _dExp = dangerExp;
+            _cExp = confidenceExp;
+        }
+
+        public double ComputeUtility(SARPoint envPoint, SARPoint currentPoint, SARGrid environment)
+        {
+            //Creazione set per i nodi considerati nella valutazione
+            HashSet<SARPoint> evalNodes = new HashSet<SARPoint>();
+
+            double utility = 0;
+
+            //scansione l'area circostante
+            var nodeToScan = new HashSet<SARPoint>() { envPoint }; //nodi da espandere
+            while (nodeToScan.Count > 0 && _radius > 0)
+            {
+                var n = nodeToScan.First();
+                nodeToScan.Remove(n);
+
+                //ottengo nodi limitrofi
+                var neighbors = environment.GetNeighbors(n);
+
+                //aggiorno set di nodi da valutare
+                foreach (var near in neighbors)
+                {
+                    evalNodes.Add(near as SARPoint);
+                    nodeToScan.Add(near as SARPoint);
+                }
+
+                //decremento contatore
+                _radius--;
+            }
+
+            //calcolo parametri funzione di utilità
+            double DR = 0;
+            double CR = 0;
+            int Area = evalNodes.Count;
+            double L = manhattan_distance(currentPoint, envPoint);
+
+            foreach (var node in evalNodes)
+            {
+                DR += node.Danger;
+                CR += node.Confidence;
+            }
+
+            DR = Math.Pow(DR / Area, _dExp);
+            CR = Math.Pow(CR / Area, _cExp);
+
+            utility = DR / CR * L;
+
+            return utility;
+        }
+    }
+
+    #endregion
+
 
     /// <summary>
     /// Strategia per la selezione del prossimo goal
@@ -69,14 +160,14 @@ namespace SARLib.SARPlanner
     {
         //campi per setup pianificatore        
         public SARGrid _environment;
-        public IPoint _start;
+        public SARPoint _start;
         public IUtilityFunction _utilityFunc;
         public ICostFunction _costFunc;
         public IGoalSelectionStrategy _strategy;
 
         //campi per creazione SARMission
         public ISARRoute _route;
-        public List<IPoint> _goals;
+        public List<IPoint> _goals; //posizione dei target reali
 
         //costruttore
         public SARPlanner(SARGrid environment, SARPoint entryPoint, IUtilityFunction utilityFunc, ICostFunction costFunc, IGoalSelectionStrategy strategy)
@@ -93,29 +184,61 @@ namespace SARLib.SARPlanner
 
         public ISARMission GenerateMission()
         {
-            throw new NotImplementedException();
-        }
+            //imposto punto di partenza
+            var currentPos = _start;
 
-        /// <summary>
-        /// Rappresenta un nodo del grafo usato per l'esplorazione
-        /// </summary>
-        protected class Node //rivedere in relazione ad A*
-        {
-            public SARPoint point;
-            public double GCost { get; set; } //costo dall'origine
-            public double FCost { get; set; } //costo aggregato g + h
+            //inizializzo missione
+            var mission = new SARMission.SARMission();
+            mission.Route.Route.Add(currentPos);            
 
-            public Node(SARPoint sarPoint)
+            //ciclo generazione 
+            while ((currentPos.X != _goals.First().X) && (currentPos.Y != _goals.First().Y))
             {
-                this.point = sarPoint;
-                GCost = double.MaxValue;
-                FCost = 0;
+                //seleziono candidato goal
+                var selector = new GoalSelector(_environment, _utilityFunc, _strategy);
+                var currentGoal = selector.SelectGoal(currentPos);
+
+                //pianifico percorso
+                var planner = new RoutePlanner(_environment, _costFunc);
+                var currentPlan = planner.ComputeRoute(currentPos, currentGoal);
+
+                //eseguo il piano
+                var runner = new PlanRunner();
+                currentPos = runner.ExecutePlan(currentPlan);
+
+                //aggiorno ambiente
+                const double FILTER_ERROR_RATE = 0.2;
+                var updater = new EnvironmentUpdater(FILTER_ERROR_RATE);
+                _environment = updater.UpdateEnvironmentConfidence(_environment, currentPos);
+
+                //aggiorno piano missione
+                mission.Route.Route.Add(currentPos);
             }
+
+            return mission;
         }
+
+        ///// <summary>
+        ///// Rappresenta un nodo del grafo usato per l'esplorazione
+        ///// </summary>
+        //protected class Node //rivedere in relazione ad A*
+        //{
+        //    public SARPoint point;
+        //    public double GCost { get; set; } //costo dall'origine
+        //    public double FCost { get; set; } //costo aggregato g + h
+
+        //    public Node(SARPoint sarPoint)
+        //    {
+        //        this.point = sarPoint;
+        //        GCost = double.MaxValue;
+        //        FCost = 0;
+        //    }
+        //}
     }
 
     /// <summary>
     /// Selezionatore per posizione candidata a goal
+    /// in base alla mappa dei valori di utilità
     /// </summary>
     class GoalSelector
     {
@@ -132,24 +255,24 @@ namespace SARLib.SARPlanner
             _utilMap = new Dictionary<SARPoint, double>(environment._grid.Length);
         }
 
-        public SARPoint SelectGoal()
+        public SARPoint SelectGoal(SARPoint currentPos)
         {
             //costruisco la mappa utilità dell'ambiente
-            _utilMap = BuildUtilityMap();
+            _utilMap = BuildUtilityMap(currentPos);
             //seleziono il punto con utilità massima
             var goal = _strategy.SelectNextTarget(_utilMap);
 
             return goal;
         }
 
-        private Dictionary<SARPoint, double> BuildUtilityMap()
+        private Dictionary<SARPoint, double> BuildUtilityMap(SARPoint currentPos)
         {
             Dictionary<SARPoint, double> map = new Dictionary<SARPoint, double>(_env._grid.Length);
 
             //calcolo valore di utilità delle celle
             foreach (var point in _env._grid)
             {
-                var pUtility = _util.ComputeUtility(point);
+                var pUtility = _util.ComputeUtility(point, currentPos, _env);
                 map.Add(point, pUtility);
             }
 
