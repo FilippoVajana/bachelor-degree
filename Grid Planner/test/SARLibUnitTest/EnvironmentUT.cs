@@ -73,10 +73,10 @@ namespace SARLibUnitTest
             Assert.AreEqual(2, n.Length);
 
             n = grid.GetNeighbors(grid.GetPoint(2, 2));
-            Assert.AreEqual(3, n.Length);
+            Assert.AreEqual(2, n.Length);
 
             n = grid.GetNeighbors(grid.GetPoint(1, 4));
-            Assert.AreEqual(1, n.Length);
+            Assert.AreEqual(3, n.Length);
         }
 
         [TestMethod]
