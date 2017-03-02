@@ -241,24 +241,25 @@ namespace SARLib.SAREnvironment
         {
             return GetPoint(x, y);
         }
-        //rendere privato in override ToString
-        public string ConvertToConsoleString()
-        {
-            string gridString = "";
 
-            if (_grid != null)
-            {
-                for (int r = _numRow - 1; r >= 0; r--)
-                {
-                    for (int c = 0; c < _numCol; c++)
-                    {
-                        gridString += String.Format(" {0} ", _grid[c, r].PrintConsoleFriendly());
-                    }
-                    gridString += System.Environment.NewLine;
-                }
-            }
-            return gridString;
-        }
+        ////rendere privato in override ToString
+        //private string ConvertToConsoleString()
+        //{
+        //    string gridString = "";
+
+        //    if (_grid != null)
+        //    {
+        //        for (int r = _numRow - 1; r >= 0; r--)
+        //        {
+        //            for (int c = 0; c < _numCol; c++)
+        //            {
+        //                gridString += String.Format(" {0} ", _grid[c, r].PrintConsoleFriendly());
+        //            }
+        //            gridString += System.Environment.NewLine;
+        //        }
+        //    }
+        //    return gridString;
+        //}
 
         #region Randomizer
         public void RandomizeGrid(int seed, int shuffles)
@@ -298,7 +299,7 @@ namespace SARLib.SAREnvironment
                 targets[i] = _tmpTarget;
             }
             //PROBE
-            Debug.WriteLine(ConvertToConsoleString());
+            Debug.WriteLine(new SARViewer().DisplayEnvironment(this));
 
             //propago la confidence
             foreach (var t in targets)
@@ -323,7 +324,7 @@ namespace SARLib.SAREnvironment
                 }
             }
             //PROBE
-            Debug.WriteLine(ConvertToConsoleString());
+            Debug.WriteLine(new SARViewer().DisplayEnvironment(this));
         } 
         #endregion
 
@@ -351,69 +352,5 @@ namespace SARLib.SAREnvironment
             return SARLib.Toolbox.Saver.SaveToFile(this, destinationPath, ".json");            
         }
                 
-    }
-
-    public class SARViewer
-    {
-        public enum SARPointAttributes { Confidence, Danger }
-
-        SARGrid _env;        
-
-        public SARViewer(SARGrid environment)
-        {
-            _env = environment;
-        }
-
-        public void DisplayProperty(SARPointAttributes attribute)
-        {
-            switch (attribute)
-            {
-                case SARPointAttributes.Confidence:
-                    Debug.WriteLine($"CONFIDENCE PROBABILITY DISTRIBUTION \n\n" +
-                        $"{PrintConfidence(_env)}");
-                    break;
-                case SARPointAttributes.Danger:
-                    Debug.WriteLine($"DANGER PROBABILITY DISTRIBUTION \n\n" +
-                        $"{PrintDanger(_env)}");
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        Func<SARGrid, string> PrintConfidence = delegate (SARGrid env)
-        {
-            string gridString = string.Empty;
-            var _numRow = env._numRow - 1;
-            var _numCol = env._numCol;
-
-            for (int r = _numRow; r >= 0 ; r--)
-            {
-                for (int c = 0; c < _numCol ; c++)
-                {
-                    gridString += String.Format(" {0:0.000} ", env._grid[c, r].Confidence);
-                }
-                gridString += System.Environment.NewLine;
-            }
-
-            return gridString;
-        };
-        Func<SARGrid, string> PrintDanger = delegate (SARGrid env)
-        {
-            string gridString = string.Empty;
-            var _numRow = env._numRow - 1;
-            var _numCol = env._numCol;
-
-            for (int r = _numRow; r >= 0; r--)
-            {
-                for (int c = 0; c < _numCol; c++)
-                {
-                    gridString += String.Format(" {0:0.000} ", env._grid[c, r].Danger);
-                }
-                gridString += System.Environment.NewLine;
-            }
-
-            return gridString;
-        };
     }
 }
