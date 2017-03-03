@@ -123,6 +123,7 @@ namespace SARLib.SARPlanner
 
     #endregion
 
+    #region Selezione Goal
 
     /// <summary>
     /// Strategia per la selezione del prossimo goal
@@ -143,6 +144,7 @@ namespace SARLib.SARPlanner
         }
     }
 
+    #endregion
 
 
     public interface ISARRoute
@@ -151,7 +153,6 @@ namespace SARLib.SARPlanner
         //string SaveToFile(string destination);
         //ISARPlan LoadFromFile(string source);
     }
-
     public class SARRoute : ISARRoute
     {
         public List<SARPoint> Route { get; set; }

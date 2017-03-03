@@ -26,6 +26,12 @@ namespace SARLibUnitTest
             grid.RandomizeGrid(GRID_SEED, RND_SHUFFLE);
             return grid;
         }        
+        private SARGrid GetRndGrid(int rndSeed)
+        {
+            var grid = new SARGrid(GRID_COLUMNS, GRID_ROWS);
+            grid.RandomizeGrid(rndSeed, RND_SHUFFLE);
+            return grid;
+        }
         #endregion
 
         //GRIGLIA 8x5 -> (7x4 Max)
@@ -92,8 +98,9 @@ namespace SARLibUnitTest
                 utilityMap.Add(p, utilityFun.ComputeUtility(p, pCurr, GRID));
             }
 
+            #region Debug/Analisi
             //visualizzazione debug
-            var utilMapString = VIEWER.DisplayMap(GRID, utilityMap);            
+            var utilMapString = VIEWER.DisplayMap(GRID, utilityMap);
             var confMapString = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
             var dangerMapString = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Danger);
 
@@ -102,11 +109,31 @@ namespace SARLibUnitTest
             VIEWER.BuildPropertyCsv(GRID, SARViewer.SARPointAttributes.Confidence);
             VIEWER.BuildPropertyCsv(GRID, SARViewer.SARPointAttributes.Danger);
 
+            #endregion
             //applico strategia
             var goal = selectionStrategy.SelectNextTarget(utilityMap);
+            
+            Assert.AreEqual(GRID.GetPoint(1, 4), goal);
 
-            var pGoal = GRID.GetPoint(1, 4);
-            Assert.AreEqual(pGoal, goal);
+            //SECONDO AMBIENTE
+            GRID = GetRndGrid(34);
+
+            //generazione mappa utilità
+            utilityMap = new Dictionary<SARPoint, double>();
+            foreach (var p in GRID._grid)
+            {
+                utilityMap.Add(p, utilityFun.ComputeUtility(p, pCurr, GRID));
+            }
+
+            //salvataggio csv mappe
+            VIEWER.BuildMapCsv(GRID, utilityMap, "UTILITY");
+            VIEWER.BuildPropertyCsv(GRID, SARViewer.SARPointAttributes.Confidence);
+            VIEWER.BuildPropertyCsv(GRID, SARViewer.SARPointAttributes.Danger);
+
+            //applico strategia
+            goal = selectionStrategy.SelectNextTarget(utilityMap);
+
+            Assert.AreEqual(GRID.GetPoint(7, 3), goal);
         }
     }
 }

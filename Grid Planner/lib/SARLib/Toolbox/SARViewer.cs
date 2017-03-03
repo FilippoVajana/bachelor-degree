@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace SARLib.SAREnvironment
 {
@@ -17,11 +18,16 @@ namespace SARLib.SAREnvironment
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        private static string GetHashString(Object obj)
+        private static string GetHashString(SARGrid obj)
         {
             var MD5Hash = System.Security.Cryptography.MD5.Create();
-            var hash = MD5Hash.ComputeHash(Encoding.ASCII.GetBytes(obj.ToString()));
-            var hashStr = BitConverter.ToString(hash).Replace("-", "");
+
+            //serializzo oggetto
+            var json = JsonConvert.SerializeObject(obj._grid);
+
+            //genero hash
+            var hash = MD5Hash.ComputeHash(Encoding.ASCII.GetBytes(json));
+            var hashStr = BitConverter.ToString(hash).Replace("-", "").Substring(0, 6);
             return hashStr;
         } 
         #endregion
@@ -146,9 +152,9 @@ namespace SARLib.SAREnvironment
             var root = Directory.CreateDirectory(Path.Combine(destinationPath, "CSV", date.ToString())).FullName;
 
             //definisco nome file
-            string hashStr = GetHashString(environment._grid);
+            string hashStr = GetHashString(environment);
 
-            var csvName = $"{mapName}_{hashStr}.csv";
+            var csvName = $"{hashStr}_{mapName}.csv";
 
             var mapStr = DisplayMap(environment, map);
             mapStr = mapStr.Replace(" ", ";");
@@ -169,9 +175,9 @@ namespace SARLib.SAREnvironment
             var root = Directory.CreateDirectory(Path.Combine(destinationPath, "CSV", date.ToString())).FullName;
 
             //definisco nome file
-            string hashStr = GetHashString(environment._grid);
+            string hashStr = GetHashString(environment);
 
-            var csvName = $"{property.ToString().ToUpper()}_{hashStr}.csv";
+            var csvName = $"{hashStr}_{property.ToString().ToUpper()}.csv";
 
             //creazione mappa della proprietà
             var propertyMapStr = DisplayProperty(environment, property);
