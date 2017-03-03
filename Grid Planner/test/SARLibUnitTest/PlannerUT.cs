@@ -98,7 +98,9 @@ namespace SARLibUnitTest
             var dangerMapString = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Danger);
 
             //salvataggio csv mappe
-            VIEWER.BuildMapCsv(GRID, utilityMap, "UTIL");
+            VIEWER.BuildMapCsv(GRID, utilityMap, "UTILITY");
+            VIEWER.BuildPropertyCsv(GRID, SARViewer.SARPointAttributes.Confidence);
+            VIEWER.BuildPropertyCsv(GRID, SARViewer.SARPointAttributes.Danger);
 
             //applico strategia
             var goal = selectionStrategy.SelectNextTarget(utilityMap);

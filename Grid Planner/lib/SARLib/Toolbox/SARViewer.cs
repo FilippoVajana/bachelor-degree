@@ -8,8 +8,24 @@ namespace SARLib.SAREnvironment
 {
     public class SARViewer
     {
+        const string DATA_DST_PATH = @"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest\Output\Data";
         public enum SARPointAttributes { Confidence, Danger }
-        
+
+        #region Metodi Ausiliari
+        /// <summary>
+        /// Genera l'hash dell'oggetto usando MD5
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        private static string GetHashString(Object obj)
+        {
+            var MD5Hash = System.Security.Cryptography.MD5.Create();
+            var hash = MD5Hash.ComputeHash(Encoding.ASCII.GetBytes(obj.ToString()));
+            var hashStr = BitConverter.ToString(hash).Replace("-", "");
+            return hashStr;
+        } 
+        #endregion
+
         //Visualizzazione topologia ambiente
         public string DisplayEnvironment(SARGrid environment)
         {
@@ -115,8 +131,7 @@ namespace SARLib.SAREnvironment
             return gridString;
         }
 
-        //Creazione file csv mappe ambiente
-        const string DATA_DST_PATH = @"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest\Output\Data";
+        //Creazione file csv mappe ambiente        
         /// <summary>
         /// Costruisce e salva il file .csv relativo alla mappa. 
         /// </summary>
@@ -131,22 +146,43 @@ namespace SARLib.SAREnvironment
             var root = Directory.CreateDirectory(Path.Combine(destinationPath, "CSV", date.ToString())).FullName;
 
             //definisco nome file
-            var MD5Hash = System.Security.Cryptography.MD5.Create();
-            var hash = MD5Hash.ComputeHash(Encoding.ASCII.GetBytes(map.ToString()));
+            string hashStr = GetHashString(environment._grid);
 
-            var csvName = $"{mapName}_{BitConverter.ToString(hash).Replace("-", "")}.csv";
+            var csvName = $"{mapName}_{hashStr}.csv";
 
             var mapStr = DisplayMap(environment, map);
             mapStr = mapStr.Replace(" ", ";");
 
             //salvataggio nella cartella Data
-            
+
             var path = Path.Combine(root, csvName);
             File.WriteAllText(path, mapStr);
 
             return mapStr;
-        }
+        }        
 
+        //Creazione csv proprietà ambiente
+        public string BuildPropertyCsv(SARGrid environment, SARPointAttributes property, string destinationPath = DATA_DST_PATH)
+        {
+            //costruisco root
+            var date = DateTime.Now.DayOfYear;
+            var root = Directory.CreateDirectory(Path.Combine(destinationPath, "CSV", date.ToString())).FullName;
+
+            //definisco nome file
+            string hashStr = GetHashString(environment._grid);
+
+            var csvName = $"{property.ToString().ToUpper()}_{hashStr}.csv";
+
+            //creazione mappa della proprietà
+            var propertyMapStr = DisplayProperty(environment, property);
+            propertyMapStr = propertyMapStr.Replace(" ", ";");
+
+            //salvataggio nella cartella Data
+            var path = Path.Combine(root, csvName);
+            File.WriteAllText(path, propertyMapStr);
+
+            return propertyMapStr;
+        }
         
     }
 }
