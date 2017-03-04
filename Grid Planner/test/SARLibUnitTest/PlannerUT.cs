@@ -13,7 +13,8 @@ namespace SARLibUnitTest
     {
         const int GRID_ROWS = 5;
         const int GRID_COLUMNS = 8;
-        const int GRID_SEED = 10;
+        const int GRID_SEED_1 = 10;
+        const int GRID_SEED_2 = 34;
         const int RND_SHUFFLE = 50;
 
         SARGrid GRID = null;
@@ -23,9 +24,9 @@ namespace SARLibUnitTest
         private SARGrid GetRndGrid()
         {
             var grid = new SARGrid(GRID_COLUMNS, GRID_ROWS);
-            grid.RandomizeGrid(GRID_SEED, RND_SHUFFLE);
+            grid.RandomizeGrid(GRID_SEED_1, RND_SHUFFLE);
             return grid;
-        }        
+        }
         private SARGrid GetRndGrid(int rndSeed)
         {
             var grid = new SARGrid(GRID_COLUMNS, GRID_ROWS);
@@ -92,7 +93,7 @@ namespace SARLibUnitTest
             var pCurr = GRID.GetPoint(0, 0);
 
             //costruisco mappa utilità
-            var utilityMap = new Dictionary<SARPoint, double>();            
+            var utilityMap = new Dictionary<SARPoint, double>();
             foreach (var p in GRID._grid)
             {
                 utilityMap.Add(p, utilityFun.ComputeUtility(p, pCurr, GRID));
@@ -112,11 +113,11 @@ namespace SARLibUnitTest
             #endregion
             //applico strategia
             var goal = selectionStrategy.SelectNextTarget(utilityMap);
-            
+
             Assert.AreEqual(GRID.GetPoint(1, 4), goal);
 
             //SECONDO AMBIENTE
-            GRID = GetRndGrid(34);
+            GRID = GetRndGrid(GRID_SEED_2);
 
             //generazione mappa utilità
             utilityMap = new Dictionary<SARPoint, double>();
@@ -134,6 +135,65 @@ namespace SARLibUnitTest
             goal = selectionStrategy.SelectNextTarget(utilityMap);
 
             Assert.AreEqual(GRID.GetPoint(7, 3), goal);
+        }
+
+        [TestMethod]
+        public void RoutePlanner()
+        {
+
+            //PERCORSO 1
+            var costFunc = new SARCostFunction();
+            var planner = new RoutePlanner(GRID, costFunc);
+
+            //pianifico percorso
+            var startPos = GRID.GetPoint(0, 2);
+            var goalPos = GRID.GetPoint(4, 3);
+            var route = planner.ComputeRoute(startPos, goalPos);
+
+            //visualizzazione grafica
+            var gridStr = VIEWER.DisplayEnvironment(GRID);
+            var routeStr = VIEWER.DisplayRoute(GRID, route);
+
+            Assert.AreEqual(6, route.Route.Count); //lunghezza percorso
+
+            //////////////////////////////////////////////////////////
+
+            //PERCORSO 2
+            GRID = GetRndGrid(GRID_SEED_2);
+            costFunc = new SARCostFunction();
+            planner = new RoutePlanner(GRID, costFunc);
+
+            //pianifico percorso
+            startPos = GRID.GetPoint(1, 0);
+            goalPos = GRID.GetPoint(7, 4);
+            route = planner.ComputeRoute(startPos, goalPos);
+
+            //visualizzazione grafica
+            gridStr = VIEWER.DisplayEnvironment(GRID);
+            routeStr = VIEWER.DisplayRoute(GRID, route);
+            var hash = SARViewer.GetHashString(GRID);
+
+            Assert.AreEqual(11, route.Route.Count); //lunghezza percorso
+
+            //////////////////////////////////////////////////////////
+
+            //PERCORSO 3
+            GRID = GetRndGrid();
+            costFunc = new SARCostFunction();
+            planner = new RoutePlanner(GRID, costFunc);
+
+            //pianifico percorso
+            startPos = GRID.GetPoint(6, 0);
+            goalPos = GRID.GetPoint(0, 2);
+            route = planner.ComputeRoute(startPos, goalPos); //non esiste il percorso
+
+            //visualizzazione grafica
+            gridStr = VIEWER.DisplayEnvironment(GRID);
+            routeStr = VIEWER.DisplayRoute(GRID, route);
+            hash = SARViewer.GetHashString(GRID);
+
+            Assert.AreEqual(0, route.Route.Count); //lunghezza percorso
+
         }
     }
 }

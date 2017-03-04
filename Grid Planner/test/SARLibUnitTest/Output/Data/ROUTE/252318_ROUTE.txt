@@ -1,0 +1,25 @@
+BASE GRID:
+
+ %  %  $  #  #  %  %  # 
+ $  %  %  %  $  #  $  % 
+ %  %  #  %  #  #  #  $ 
+ #  #  $  #  %  %  %  % 
+ %  #  #  %  %  $  %  # 
+
+
+ROUTE:
+
+ %  %  $  #  #  %  %  # 
+ @  @  @  @  @  #  $  % 
+ @  %  #  %  #  #  #  $ 
+ #  #  $  #  %  %  %  % 
+ %  #  #  %  %  $  %  # 
+
+Start: (0,2)
+Goal: (4,3)
+Lunghezza: 6
+
+% = Area libera
+# = Ostacolo
+$ = Target (Esito generazione random)
+@ = Percorso calcolato

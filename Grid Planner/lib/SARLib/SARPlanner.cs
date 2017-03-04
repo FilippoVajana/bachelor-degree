@@ -303,7 +303,7 @@ namespace SARLib.SARPlanner
     /// <summary>
     /// Generatore per il percorso ottimo fino al goal
     /// </summary>
-    class RoutePlanner
+    public class RoutePlanner
     {
         SARGrid _env;
         ICostFunction _cost;

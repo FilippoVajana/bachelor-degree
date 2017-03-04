@@ -132,33 +132,32 @@ namespace SARLib.Toolbox
                 var neighbors = _env.GetNeighbors(current);
                 foreach (var neighbor in neighbors)
                 {
-                    //escludo nodi chiusi
+                    //nodo già visitato
                     if (_closedSet.Contains(neighbor))
                     {
-                        //non fare nulla
+                        continue;
                     }
-                    //apro nuovi nodi
-                    else if (!_openSet.Contains(neighbor))
+
+                    //calcolo costo g fino al vicino
+                    var tentativeGScore = _gScore[current] + _env.Distance(current, _goal);
+
+                    //nuovo nodo
+                    if (!_openSet.Contains(neighbor))
                     {
                         _openSet.Add(neighbor as SARPoint);
                     }
-                    else //valuto nodo aperto
+                    else if (tentativeGScore >= _gScore[neighbor as SARPoint])//percorso peggiore
                     {
-                        //calcolo costo g fino al vicino
-                        var tentativeGScore = _gScore[current] + _env.Distance(current, _goal);
-
-                        //aggiorno cammino/costo fino al vicino
-                        if (tentativeGScore < _gScore[neighbor as SARPoint])
-                        {
-                            _cameFrom[neighbor as SARPoint] = current;
-                            _gScore[neighbor as SARPoint] = tentativeGScore;
-                            _fScore[neighbor as SARPoint] = _gScore[neighbor as SARPoint] + _costFunc.EvaluateCost(neighbor as SARPoint, _goal);
-                        }
+                        continue;
                     }
+
+                    //aggiorno parametri di costo
+                    _cameFrom[neighbor as SARPoint] = current;
+                    _gScore[neighbor as SARPoint] = tentativeGScore;
+                    _fScore[neighbor as SARPoint] = _gScore[neighbor as SARPoint] + _costFunc.EvaluateCost(neighbor as SARPoint, _goal);
                 }
             }
-
-            return null;
+            return new List<SARPoint>() { };
         }
     }
 

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Newtonsoft.Json;
+using SARLib.SARPlanner;
 
 namespace SARLib.SAREnvironment
 {
@@ -18,7 +19,7 @@ namespace SARLib.SAREnvironment
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        private static string GetHashString(SARGrid obj)
+        public static string GetHashString(SARGrid obj)
         {
             var MD5Hash = System.Security.Cryptography.MD5.Create();
 
@@ -135,6 +136,39 @@ namespace SARLib.SAREnvironment
             Debug.WriteLine($"{map.GetType().Name} ({_numCol} x {_numRow})");
 
             return gridString;
+        }
+
+        public object DisplayRoute(SARGrid environment, SARRoute route)
+        {
+            var baseGridStr = DisplayEnvironment(environment);
+            var gridRouteStr = String.Empty;
+
+            var _env = environment;
+            int _numRow = _env._numRow;
+            int _numCol = _env._numCol;           
+
+            if (_env != null)
+            {
+                for (int r = _numRow - 1; r >= 0; r--)
+                {
+                    for (int c = 0; c < _numCol; c++)
+                    {
+                        if (!route.Route.Contains(_env._grid[c, r]))
+                        {
+                            gridRouteStr += String.Format(" {0} ", _env._grid[c, r].PrintConsoleFriendly());
+                        }
+                        else
+                            gridRouteStr += String.Format(" @ ");
+                    }
+                    gridRouteStr += Environment.NewLine;
+                }
+            }
+            Debug.WriteLine($"{_env.GetType().Name} ({_numCol} x {_numRow})");
+
+            return $"BASE GRID:{Environment.NewLine}{Environment.NewLine}" +
+                $"{baseGridStr}{Environment.NewLine}{Environment.NewLine}" +
+                $"ROUTE:{Environment.NewLine}{Environment.NewLine}" +
+                $"{gridRouteStr}";
         }
 
         //Creazione file csv mappe ambiente        
