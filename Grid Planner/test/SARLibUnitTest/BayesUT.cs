@@ -11,158 +11,117 @@ namespace SARLibUnitTest
     [TestClass]
     public class BayesUT
     {
+        #region COSTANTI
+        const int GRID_ROWS = 5;
+        const int GRID_COLUMNS = 8;
+        const int GRID_SEED_1 = 10;
+        const int GRID_SEED_2 = 34;
+        const int RND_SHUFFLE = 50;
+        const double FILTER_ALFA = 0.2;
+        const double FILTER_BETA = 0.2;
+        #endregion
+
+        SARGrid GRID = null;
+        SARViewer VIEWER = null;
+        BayesEngine.BayesFilter FILTER = null;
+
+        #region Metodi ausiliari
+        private SARGrid GetRndGrid()
+        {
+            var grid = new SARGrid(GRID_COLUMNS, GRID_ROWS);
+            grid.RandomizeGrid(GRID_SEED_1, RND_SHUFFLE);
+            return grid;
+        }
+        private SARGrid GetRndGrid(int rndSeed)
+        {
+            var grid = new SARGrid(GRID_COLUMNS, GRID_ROWS);
+            grid.RandomizeGrid(rndSeed, RND_SHUFFLE);
+            return grid;
+        }
         private void DebugConsolePrint(SARViewer viewer, SARGrid environment)
         {
-            viewer = new SARViewer();
-            viewer.DisplayProperty(environment, SARViewer.SARPointAttributes.Confidence);
-            viewer.DisplayProperty(environment, SARViewer.SARPointAttributes.Danger);
-            //updatedGrid.SaveToFile(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest");
+            VIEWER.DisplayProperty(environment, SARViewer.SARPointAttributes.Confidence);
+            VIEWER.DisplayProperty(environment, SARViewer.SARPointAttributes.Danger);
+        }
+        #endregion
+
+        //GRIGLIA 8x5 -> (7x4 Max)
+        [TestInitialize]
+        public void TestInitialize()
+        {
+            GRID = GetRndGrid();
+            VIEWER = new SARViewer();
+            FILTER = new BayesEngine.BayesFilter(FILTER_ALFA, FILTER_BETA);            
+        }        
+
+        [TestMethod]
+        public void FilterPoint_SenseTrue()
+        {
+            //debug
+            var gridConfStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
+
+            var sensePoint = GRID.GetPoint(0, 0); //auto aggiornamento
+            var posterior = FILTER.ComputeConfidencePosterior(sensePoint, sensePoint, 1);
+            Assert.AreEqual(0.661.ToString("N3"), posterior.ToString("N3"));
+
+            var p1 = GRID.GetPoint(4, 3); //deve calare
+            posterior = FILTER.ComputeConfidencePosterior(sensePoint, p1, 1);
+            Assert.AreEqual(0.004.ToString("N3"), posterior.ToString("N3"));
+
+            p1 = GRID.GetPoint(4, 4); //ostacolo
+            posterior = FILTER.ComputeConfidencePosterior(sensePoint, p1, 1);
+            Assert.AreEqual(0.000.ToString("N3"), posterior.ToString("N3"));
+
+            //debug
+            gridConfStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
         }
 
         [TestMethod]
-        public void FilterSingleInput()
+        public void FilterPoint_SenseFalse()
         {
-            var bayes = new BayesEngine.BayesFilter(0.2, null);
-            var prior = 0.8;
+            //debug
+            var gridConfStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
 
-            var filtered = bayes.Filter(new List<int>() { 1 }, prior);
-            Assert.AreEqual(0.941.ToString("N3"), filtered.ToString("N3"));
+            var sensePoint = GRID.GetPoint(0, 0); //auto aggiornamento
+            var posterior = FILTER.ComputeConfidencePosterior(sensePoint, sensePoint, 0);
+            Assert.AreEqual(0.109.ToString("N3"), posterior.ToString("N3"));
 
-            filtered = bayes.Filter(new List<int>() { 0 }, prior);
-            Assert.AreEqual(0.059.ToString("N3"), filtered.ToString("N3"));
+            var p1 = GRID.GetPoint(4, 3); //deve salire
+            posterior = FILTER.ComputeConfidencePosterior(sensePoint, p1, 0);
+            Assert.AreEqual(0.009.ToString("N3"), posterior.ToString("N3"));
+
+            p1 = GRID.GetPoint(4, 4); //ostacolo
+            posterior = FILTER.ComputeConfidencePosterior(sensePoint, p1, 0);
+            Assert.AreEqual(0.000.ToString("N3"), posterior.ToString("N3"));
+
+            //debug
+            gridConfStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
         }
 
         [TestMethod]
-        public void FilterMultipleInput()
+        public void FilterGrid_SenseTrue()
         {
-            var bayes = new BayesEngine.BayesFilter(0.2, new BayesEngine.Logger());
-            var prior = 0.9;
+            //debug
+            var gridConfStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
 
-            //creo la sequenza degli input (letture del sensore)
-            var inputData = new List<int>();
-            var rnd = new Random(1);
-            for (int i = 0; i < 30; i++)
-            {
-                inputData.Add(rnd.Next(0, 2));
-            }
+            var sensePoint = GRID.GetPoint(0, 0);
+            var updateGrid = FILTER.UpdateEnvironmentConfidence_SPY(GRID, sensePoint, 1);
 
-            var filtered = bayes.Filter(inputData, prior);
-            Assert.AreEqual(0.640.ToString("N3"), filtered.ToString("N3"));
+            //debug
+            gridConfStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
         }
 
         [TestMethod]
-        public void PositiveConfidenceDeltaPropagation()
+        public void FilterGrid_SenseFalse()
         {
-            //var bayesEngine = new BayesEngine();
-            var bayes = new BayesEngine.BayesFilter(0.2, new BayesEngine.Logger());
-            var prior = 0.8;
+            //debug
+            var gridConfStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
 
-            //creo ambiente
-            var envGrid = new SARGrid(5, 10);
-            var viewer = new SARViewer();
-            //Debug.WriteLine(envGrid.ConvertToConsoleString());
+            var sensePoint = GRID.GetPoint(0, 0);
+            var updateGrid = FILTER.UpdateEnvironmentConfidence_SPY(GRID, sensePoint, 0);
 
-            //imposto punto di sensing #1
-            var p = envGrid.GetPoint(0, 0);
-            var trueTarget = envGrid.BuildSARPoint(p.X, p.Y, prior, p.Danger, SARPoint.PointTypes.Target);            
-            
-            //imposto punto di sensing #2
-            p = envGrid.GetPoint(4, 9);
-            var falseTarget = envGrid.BuildSARPoint(p.X, p.Y, prior, p.Danger, SARPoint.PointTypes.Clear);            
-            
-            //visualizzo la griglia prima dell'aggiornamento
-            viewer.DisplayProperty(envGrid, SARViewer.SARPointAttributes.Confidence);
-
-            //aggiorno la griglia
-            var updatedGrid = bayes.UpdateConfidence(envGrid, trueTarget);
-
-            Assert.AreEqual(0.941.ToString("N3"), trueTarget.Confidence.ToString("N3"));
-            Assert.AreEqual(0.769.ToString("N3"), falseTarget.Confidence.ToString("N3"));
-
-            //DEBUG
-            DebugConsolePrint(viewer, updatedGrid);
-        }
-
-        [TestMethod]
-        public void NegativeConfidenceDeltaPropagation()
-        {
-            //var bayesEngine = new BayesEngine();
-            var bayes = new BayesEngine.BayesFilter(0.2, new BayesEngine.Logger());
-            var prior = 0.8;
-
-            //creo ambiente
-            var envGrid = new SARGrid(5, 10);
-            var viewer = new SARViewer();
-            //Debug.WriteLine(envGrid.ConvertToConsoleString());
-
-            //imposto punto di sensing #1
-            var p = envGrid.GetPoint(0, 0);
-            var trueTarget = envGrid.BuildSARPoint(p.X, p.Y, prior, p.Danger, SARPoint.PointTypes.Target);
-
-            //imposto punto di sensing #2
-            p = envGrid.GetPoint(4, 9);
-            var falseTarget = envGrid.BuildSARPoint(p.X, p.Y, prior, p.Danger, SARPoint.PointTypes.Clear);
-
-            //DEBUG
-            //visualizzo la griglia prima dell'aggiornamento
-            DebugConsolePrint(viewer, envGrid);
-
-            //aggiorno la griglia
-            var updatedGrid = bayes.UpdateConfidence(envGrid, falseTarget);
-
-            Assert.AreEqual(0.841.ToString("N3"), trueTarget.Confidence.ToString("N3"));
-            Assert.AreEqual(0.059.ToString("N3"), falseTarget.Confidence.ToString("N3"));
-
-            //DEBUG
-            DebugConsolePrint(viewer, updatedGrid);
-        }
-
-        [TestMethod]
-        public void PositiveConfidenceDeltaPropagationGrid()
-        {
-            //var bayesEngine = new BayesEngine();
-            var bayes = new BayesEngine.BayesFilter(0.2, new BayesEngine.Logger());
-            var prior = 0.8;
-
-            //creo ambiente
-            var envGrid = new SARGrid(5, 10);
-            envGrid.RandomizeGrid(10, 25);
-            var viewer = new SARViewer();
-            //Debug.WriteLine(envGrid.ConvertToConsoleString());
-
-            //imposto punto di sensing #1
-            var p = envGrid.GetPoint(0, 5);
-            var trueTarget = envGrid.BuildSARPoint(p.X, p.Y, prior, p.Danger, SARPoint.PointTypes.Target);
-
-            //aggiorno la griglia
-            var updatedGrid = bayes.UpdateConfidence(envGrid, trueTarget);
-
-            //DEBUG
-            DebugConsolePrint(viewer, updatedGrid);
-        }
-
-        [TestMethod]
-        public void NegativeConfidenceDeltaPropagationGrid()
-        {
-            //var bayesEngine = new BayesEngine();
-            var bayes = new BayesEngine.BayesFilter(0.2, new BayesEngine.Logger());
-            var prior = 0.8;
-
-            //creo ambiente
-            var envGrid = new SARGrid(5, 10);
-            envGrid.RandomizeGrid(10, 25);
-            var viewer = new SARViewer();
-            //Debug.WriteLine(envGrid.ConvertToConsoleString());
-
-            //imposto punto di sensing #1
-            var p = envGrid.GetPoint(2, 5);
-            var falseTarget = envGrid.BuildSARPoint(p.X, p.Y, prior, p.Danger, SARPoint.PointTypes.Clear);
-
-            //aggiorno la griglia
-            var updatedGrid = bayes.UpdateConfidence(envGrid, falseTarget);
-
-            //DEBUG
-            DebugConsolePrint(viewer, updatedGrid);
+            //debug
+            gridConfStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
         }
     }
 }

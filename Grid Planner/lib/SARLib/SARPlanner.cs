@@ -227,8 +227,9 @@ namespace SARLib.SARPlanner
                 currentPos = runner.ExecutePlan(currentPlan);
 
                 //aggiorno ambiente
-                const double FILTER_ERROR_RATE = 0.2;
-                var updater = new EnvironmentUpdater(FILTER_ERROR_RATE);
+                const double FILTER_FALSENEG_RATIO = 0.2;
+                const double FILTER_FALSEPOS_RATIO = 0.2;
+                var updater = new EnvironmentUpdater(FILTER_FALSENEG_RATIO, FILTER_FALSEPOS_RATIO);
                 _environment = updater.UpdateEnvironmentConfidence(_environment, currentPos);
 
                 //aggiorno piano missione
@@ -354,19 +355,17 @@ namespace SARLib.SARPlanner
     /// </summary>
     class EnvironmentUpdater
     {
-        Toolbox.BayesEngine.BayesFilter _bayesFilter;
-        Toolbox.BayesEngine.Logger _filterLogger;
+        Toolbox.BayesEngine.BayesFilter _bayesFilter;        
 
-        public EnvironmentUpdater(double bayesErrorRate)
+        public EnvironmentUpdater(double falseNegRatio, double falsePosRatio)
         {
-            _filterLogger = null; //rivedere
-            _bayesFilter = new Toolbox.BayesEngine.BayesFilter(bayesErrorRate, _filterLogger);
+            _bayesFilter = new Toolbox.BayesEngine.BayesFilter(falseNegRatio, falsePosRatio);
         }
 
-        public SARGrid UpdateEnvironmentConfidence(SARGrid environment, IPoint sensingPoint)
+        public SARGrid UpdateEnvironmentConfidence(SARGrid environment, IPoint sensePoint)
         {
             //aggiorno distribuzione di probabilità
-            var updatedGrid = _bayesFilter.UpdateConfidence(environment, sensingPoint);
+            var updatedGrid = _bayesFilter.UpdateEnvironmentConfidence(environment, sensePoint);
 
             return updatedGrid;
         }
