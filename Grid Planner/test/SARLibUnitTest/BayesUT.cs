@@ -105,7 +105,7 @@ namespace SARLibUnitTest
             var gridConfStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
 
             var sensePoint = GRID.GetPoint(0, 0);
-            var updateGrid = FILTER.UpdateEnvironmentConfidence_SPY(GRID, sensePoint, 1);
+            var updateGrid = FILTER.UpdateEnvironmentConfidence(GRID, sensePoint, 1);
 
             //debug
             gridConfStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
@@ -118,10 +118,28 @@ namespace SARLibUnitTest
             var gridConfStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
 
             var sensePoint = GRID.GetPoint(0, 0);
-            var updateGrid = FILTER.UpdateEnvironmentConfidence_SPY(GRID, sensePoint, 0);
+            var updateGrid = FILTER.UpdateEnvironmentConfidence(GRID, sensePoint, 0);
 
             //debug
             gridConfStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
+        }
+
+        [TestMethod]
+        public void NormalizeConfidence()
+        {
+            var gridStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
+
+            //normalizzo
+            FILTER.NormalizeConfidence(GRID);
+
+            var gridNormStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
+
+            double confidenceSum = 0;
+            foreach (var p in GRID._grid)
+            {
+                confidenceSum += p.Confidence;
+            }
+            Assert.AreEqual(1.ToString(), confidenceSum.ToString());
         }
     }
 }

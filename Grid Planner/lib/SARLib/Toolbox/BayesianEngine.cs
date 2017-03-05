@@ -100,16 +100,39 @@ namespace SARLib.Toolbox
                 }
 
             }
+            /// <summary>
+            /// Normalizzazione dei valori di probailità per la confidenza
+            /// </summary>
+            /// <param name="environment"></param>
+            public void NormalizeConfidence(SARGrid environment)
+            {
+                //calcolo fattore di normalizzazione
+                double confidenceSum = 0;
+                foreach (var p in environment._grid)
+                {
+                    confidenceSum += p.Confidence;
+                }
+
+                //normalizzo
+                foreach (var p in environment._grid)
+                {
+                    p.Confidence = p.Confidence / confidenceSum;
+                }
+            }
 
             /// <summary>
             /// Calcola aggiornamento Confidence dell'ambiente a seguito di una lettura sensoriale
             /// </summary>
             /// <param name="environment"></param>
             /// <param name="sensePoint"></param>
+            /// <param name="senseResult"></param>
             /// <returns></returns>
-            public SARGrid UpdateEnvironmentConfidence(SARGrid environment, IPoint sensePoint)
+            public SARGrid UpdateEnvironmentConfidence(SARGrid environment, IPoint sensePoint, int senseResult)
             {
-                var senseResult = simulate_sensor_confidence_reading(environment, sensePoint);
+                if (senseResult < 0)
+                {
+                    senseResult = simulate_sensor_confidence_reading(environment, sensePoint); 
+                }
 
                 //aggiornamento posterior per sensePoint
                 var senseP = environment.GetPoint(sensePoint.X, sensePoint.Y);
@@ -121,21 +144,8 @@ namespace SARLib.Toolbox
                     point.Confidence = ComputeConfidencePosterior(senseP, point, senseResult);
                 }
 
-                return environment;
-            }
-            public SARGrid UpdateEnvironmentConfidence_SPY(SARGrid environment, IPoint sensePoint, int senseResult)
-            {
-                //var senseResult = simulate_sensor_confidence_reading(environment, sensePoint);
-
-                //aggiornamento posterior per sensePoint
-                var senseP = environment.GetPoint(sensePoint.X, sensePoint.Y);
-                senseP.Confidence = ComputeConfidencePosterior(senseP, senseP, senseResult);
-
-                //aggiornamento posterior per l'ambiente
-                foreach (var point in environment._grid)
-                {
-                    point.Confidence = ComputeConfidencePosterior(senseP, point, senseResult);
-                }
+                //normalizzo la distribuzione di probabilità
+                NormalizeConfidence(environment);
 
                 return environment;
             }

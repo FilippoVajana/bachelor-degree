@@ -365,7 +365,7 @@ namespace SARLib.SARPlanner
         public SARGrid UpdateEnvironmentConfidence(SARGrid environment, IPoint sensePoint)
         {
             //aggiorno distribuzione di probabilità
-            var updatedGrid = _bayesFilter.UpdateEnvironmentConfidence(environment, sensePoint);
+            var updatedGrid = _bayesFilter.UpdateEnvironmentConfidence(environment, sensePoint, -1);
 
             return updatedGrid;
         }
