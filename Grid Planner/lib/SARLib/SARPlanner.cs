@@ -201,15 +201,22 @@ namespace SARLib.SARPlanner
             _route = null;
             _goals = environment._realTargets;
         }
+        //costanti per filtro Bayes
+        const double FILTER_FALSENEG_RATIO = 0.2;
+        const double FILTER_FALSEPOS_RATIO = 0.2;
+        EnvironmentUpdater EnvUpdater = new EnvironmentUpdater(FILTER_FALSENEG_RATIO, FILTER_FALSEPOS_RATIO); //filtro Bayes
 
         public ISARMission GenerateMission()
         {
             //imposto punto di partenza
             var currentPos = _start;
 
+            //lettura sensoriale nel punto di partenza             
+            _environment = EnvUpdater.UpdateEnvironmentConfidence(_environment, currentPos);
+
             //inizializzo missione
-            var mission = new SARMission.SARMission();
-            mission.Route.Route.Add(currentPos);            
+            var mission = new SARMission.SARMission(_environment, new SARRoute(new List<SARPoint>()), currentPos);
+            mission.Route.Route.Add(currentPos); //aggiungo posizione iniziale            
 
             //ciclo generazione 
             while ((currentPos.X != _goals.First().X) && (currentPos.Y != _goals.First().Y))
@@ -222,18 +229,22 @@ namespace SARLib.SARPlanner
                 var planner = new RoutePlanner(_environment, _costFunc);
                 var currentPlan = planner.ComputeRoute(currentPos, currentGoal);
 
+                //controllo che sia stato trovato un percorso
+                if (currentPlan.Route.Count == 0)
+                {
+                    return mission;
+                }
+
                 //eseguo il piano
                 var runner = new PlanRunner();
                 currentPos = runner.ExecutePlan(currentPlan);
 
-                //aggiorno ambiente
-                const double FILTER_FALSENEG_RATIO = 0.2;
-                const double FILTER_FALSEPOS_RATIO = 0.2;
-                var updater = new EnvironmentUpdater(FILTER_FALSENEG_RATIO, FILTER_FALSEPOS_RATIO);
-                _environment = updater.UpdateEnvironmentConfidence(_environment, currentPos);
-
                 //aggiorno piano missione
                 mission.Route.Route.Add(currentPos);
+
+                //aggiorno ambiente                
+                //var updater = new EnvironmentUpdater(FILTER_FALSENEG_RATIO, FILTER_FALSEPOS_RATIO);
+                _environment = EnvUpdater.UpdateEnvironmentConfidence(_environment, currentPos);                
             }
 
             return mission;
@@ -334,7 +345,7 @@ namespace SARLib.SARPlanner
     /// <summary>
     /// Esecutore per un piano di movimento 
     /// </summary>
-    class PlanRunner
+    public class PlanRunner
     {      
         /// <summary>
         /// Esegue il primo passo del percorso pianificato
@@ -343,7 +354,7 @@ namespace SARLib.SARPlanner
         /// <returns></returns>
         public SARPoint ExecutePlan(ISARRoute route)
         {
-            var position = route.Route.First();
+            var position = route.Route[1]; //prendo la posizione [1] poichè [0] è la posizione corrente
 
             return position;
         }        
@@ -359,7 +370,7 @@ namespace SARLib.SARPlanner
 
         public EnvironmentUpdater(double falseNegRatio, double falsePosRatio)
         {
-            _bayesFilter = new Toolbox.BayesEngine.BayesFilter(falseNegRatio, falsePosRatio);
+            _bayesFilter = new BayesEngine.BayesFilter(falseNegRatio, falsePosRatio);
         }
 
         public SARGrid UpdateEnvironmentConfidence(SARGrid environment, IPoint sensePoint)

@@ -16,6 +16,9 @@ namespace SARLibUnitTest
         const int GRID_SEED_1 = 10;
         const int GRID_SEED_2 = 34;
         const int RND_SHUFFLE = 50;
+        const int UTILITY_RADIUS = 2;
+        const double UTILITY_CONF_EXP = 0.7;
+        const double UTILITY_DNG_EXP = 1 - UTILITY_CONF_EXP;
 
         SARGrid GRID = null;
         SARViewer VIEWER = null;
@@ -60,12 +63,8 @@ namespace SARLibUnitTest
 
         [TestMethod]
         public void UtilityFunction()
-        {
-            const int RADIUS = 2;
-            double CONF_EXP = 0.7;
-            double DNG_EXP = 1 - CONF_EXP;
-
-            var utilityFun = new SARUtilityFunction(RADIUS, DNG_EXP, CONF_EXP);
+        {      
+            var utilityFun = new SARUtilityFunction(UTILITY_RADIUS, UTILITY_DNG_EXP, UTILITY_CONF_EXP);
             //var GRID = GetRndGrid();
 
             var p1 = GRID.GetPoint(3, 4);
@@ -194,6 +193,42 @@ namespace SARLibUnitTest
 
             Assert.AreEqual(0, route.Route.Count); //lunghezza percorso
 
+        }
+
+        [TestMethod]
+        public void PlanRunner()
+        {
+            //PERCORSO 1
+            var costFunc = new SARCostFunction();
+            var planner = new RoutePlanner(GRID, costFunc);
+            var runner = new PlanRunner();
+
+            //pianifico percorso
+            var startPos = GRID.GetPoint(0, 2);
+            var goalPos = GRID.GetPoint(4, 3);
+            var route = planner.ComputeRoute(startPos, goalPos);
+            var nextPos = runner.ExecutePlan(route);
+
+            //visualizzazione grafica
+            var gridStr = VIEWER.DisplayEnvironment(GRID);
+            var routeStr = VIEWER.DisplayRoute(GRID, route);
+
+            Assert.AreEqual(GRID.GetPoint(0, 3), nextPos);
+        }
+
+        [TestMethod]
+        public void MissionPlanner()
+        {
+            var costFunc = new SARCostFunction();
+            var utilityFunc = new SARUtilityFunction(UTILITY_RADIUS, UTILITY_DNG_EXP, UTILITY_CONF_EXP);
+            var goalStrat = new SARGoalSelector();
+
+            var entryP = GRID.GetPoint(0, 2);
+            //inizializzo pianificatore
+            var planner = new SARPlanner(GRID, entryP, utilityFunc, costFunc, goalStrat);
+
+            //pianifico missione
+            var mission = planner.GenerateMission();
         }
     }
 }
