@@ -1,11 +1,8 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace SARLib.SAREnvironment
 {
@@ -353,7 +350,7 @@ namespace SARLib.SAREnvironment
         /// <param name="destinationPath"></param>
         /// <returns></returns>
         public string SaveToFile(string destinationPath, string fileName = null)
-        {
+        {            
             return Toolbox.Saver.SaveToJsonFile(this, destinationPath, fileName);            
         }
                 

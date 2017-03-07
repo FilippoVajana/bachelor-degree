@@ -125,14 +125,15 @@ namespace SARLibUnitTest
         {
             var savedGrid = GRID;
             var dstPath = Path.GetFullPath(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest\Output\SARGrid");
-        #if !DEBUG
+#if !DEBUG
             string outFilePath = savedGrid.SaveToFile(Directory.GetCurrentDirectory()); 
-        #endif
-        #if DEBUG
+#endif
+#if DEBUG
             string outFilePath = savedGrid.SaveToFile(dstPath, "prova");
-        #endif
+#endif
             Assert.IsNotNull(outFilePath);
 
+            //var outFilePath = @"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest\Output\SARGrid\prova.json";
             var loadedGrid = new SARGrid(outFilePath);
             Assert.AreEqual(savedGrid.ToString(), loadedGrid.ToString());
         }
