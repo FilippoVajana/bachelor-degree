@@ -62,7 +62,7 @@ namespace SARLib.Toolbox
             Func<SARGrid, IPoint, int> simulate_sensor_confidence_reading = delegate (SARGrid env, IPoint sensePoint)
             {
                 sensePoint = env.GetPoint(sensePoint.X, sensePoint.Y);
-                if (env._realTargets.Contains(sensePoint))
+                if (env._estimatedTargetPositions.Contains(sensePoint))
                     return 1;
                 else
                     return 0;                
