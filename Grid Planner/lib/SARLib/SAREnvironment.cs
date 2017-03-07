@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -37,6 +39,8 @@ namespace SARLib.SAREnvironment
             Confidence = confidence;
         }
 
+        //[JsonProperty("Type")]
+        //[JsonConverter(typeof(StringEnumConverter))]
         public PointTypes Type
         {
             get
@@ -66,6 +70,7 @@ namespace SARLib.SAREnvironment
                 }
             }
         }
+
         public double Danger
         {
             get
@@ -96,7 +101,6 @@ namespace SARLib.SAREnvironment
         }
 
         public enum PointTypes { Obstacle, Target, Clear }
-
         
         public String PrintConsoleFriendly()
         {
@@ -123,7 +127,7 @@ namespace SARLib.SAREnvironment
         int Distance(IPoint p1, IPoint p2);
         IPoint[] GetNeighbors(IPoint point);
         IPoint GetPoint(int x, int y);
-        String SaveToFile(string destinationPath);
+        String SaveToFile(string destinationPath, string fileName = null);
     }
     public class SARGrid : IGrid
     {
@@ -143,7 +147,7 @@ namespace SARLib.SAREnvironment
         ///rappresenta sia la topografia dell'ambiente che la distribuzione di probabilità degli obiettivi
         public SARPoint[,] _grid;
         ///rappresenta le posizioni reali dei target
-        public List<IPoint> _realTargets = new List<IPoint>();
+        public List<SARPoint> _realTargets = new List<SARPoint>();
 
         #region Costruttori
         /// <summary>
@@ -172,6 +176,7 @@ namespace SARLib.SAREnvironment
             _grid = grid._grid;
             _numCol = grid._numCol;
             _numRow = grid._numRow;
+            _realTargets = grid._realTargets;
         } 
         #endregion
 
@@ -209,7 +214,7 @@ namespace SARLib.SAREnvironment
             _grid[x, y] = point;
             //aggiungo il punto alla lista dei target reali
             if (type == SARPoint.PointTypes.Target)
-                _realTargets.Add(point);
+                _realTargets.Add(point); //RIVEDERE!!!!!!!!!!!!!!!!
 
             //propago Confidence ai punti adiacenti
             var neighbors = this.GetNeighbors(point);
@@ -347,9 +352,9 @@ namespace SARLib.SAREnvironment
         /// </summary>
         /// <param name="destinationPath"></param>
         /// <returns></returns>
-        public string SaveToFile(string destinationPath)
+        public string SaveToFile(string destinationPath, string fileName = null)
         {
-            return SARLib.Toolbox.Saver.SaveToFile(this, destinationPath, ".json");            
+            return Toolbox.Saver.SaveToJsonFile(this, destinationPath, fileName);            
         }
                 
     }

@@ -187,7 +187,7 @@ namespace SARLib.SARPlanner
 
         //campi per creazione SARMission
         public ISARRoute _route;
-        public List<IPoint> _goals; //posizione dei target reali
+        public List<SARPoint> _goals; //posizione dei target reali
 
         //costruttore
         public SARPlanner(SARGrid environment, SARPoint entryPoint, IUtilityFunction utilityFunc, ICostFunction costFunc, IGoalSelectionStrategy strategy)

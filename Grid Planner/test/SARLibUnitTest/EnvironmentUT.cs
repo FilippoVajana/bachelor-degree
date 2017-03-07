@@ -96,31 +96,45 @@ namespace SARLibUnitTest
             var gridString = VIEWER.DisplayEnvironment(GRID); //grid.ConvertToConsoleString();
 
             var n = grid.GetNeighbors(grid.GetPoint(0, 0));
-            Assert.AreEqual(2, n.Length);
+            Assert.AreEqual(0, n.Length);
 
             n = grid.GetNeighbors(grid.GetPoint(2, 2));
-            Assert.AreEqual(2, n.Length);
+            Assert.AreEqual(4, n.Length);
 
             n = grid.GetNeighbors(grid.GetPoint(1, 4));
             Assert.AreEqual(3, n.Length);
         }
 
         [TestMethod]
-        public void FileIO()
+        public void ExportEnvironment()
         {
-            var savedGrid = GRID;
-            //savedGrid.RandomizeGrid(5, 4);
+            var savedGrid = GRID;            
 
 #if !DEBUG
             string outFilePath = savedGrid.SaveToFile(Directory.GetCurrentDirectory()); 
 #endif
 #if DEBUG
-            string outFilePath = savedGrid.SaveToFile(Path.GetFullPath(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest\")); 
+            string outFilePath = savedGrid.SaveToFile(Path.GetFullPath(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest\Output\SARGrid")); 
 #endif
+            Assert.IsNotNull(outFilePath);
+            
+        }
+
+        [TestMethod]
+        public void ImportEnvironment()
+        {
+            var savedGrid = GRID;
+            var dstPath = Path.GetFullPath(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest\Output\SARGrid");
+        #if !DEBUG
+            string outFilePath = savedGrid.SaveToFile(Directory.GetCurrentDirectory()); 
+        #endif
+        #if DEBUG
+            string outFilePath = savedGrid.SaveToFile(dstPath, "prova");
+        #endif
             Assert.IsNotNull(outFilePath);
 
             var loadedGrid = new SARGrid(outFilePath);
-            Assert.AreEqual(VIEWER.DisplayEnvironment(savedGrid), VIEWER.DisplayEnvironment(loadedGrid));
+            Assert.AreEqual(savedGrid.ToString(), loadedGrid.ToString());
         }
 
         [TestMethod]

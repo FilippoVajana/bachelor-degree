@@ -24,7 +24,11 @@
 
   <ItemGroup>
     <Folder Include="Output\Data\" />
+    <Folder Include="Output\SARGrid\" />
+    <Folder Include="Output\SARGrid\" />
     <Folder Include="Output\Simulator Run\" />
   </ItemGroup>
+
+  <ProjectExtensions><VisualStudio><UserProperties /></VisualStudio></ProjectExtensions>
 
 </Project>

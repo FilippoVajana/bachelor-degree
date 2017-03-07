@@ -16,7 +16,7 @@ namespace SARLib.SARMission
         ISARRoute Route { get; set; }
 
         //IPoint Start { get; set; }
-        List<IPoint> Goals { get; set; }
+        List<SARPoint> Goals { get; set; }
 
         ///aggiungere i log circa le modifiche all'ambiente
         ///1) variazione della confidenza
@@ -32,7 +32,7 @@ namespace SARLib.SARMission
         public SARGrid Environment { get; set; }
         public ISARRoute Route { get; set; }
         public IPoint Start { get; set; }
-        public List<IPoint> Goals { get; set; }
+        public List<SARPoint> Goals { get; set; }
         #endregion
 
         #region Costruttori
@@ -57,7 +57,7 @@ namespace SARLib.SARMission
             Environment = new SARGrid(envCol, envRow);
             Route = null;
             Start = null;
-            Goals = new List<IPoint>(numTargets);
+            Goals = new List<SARPoint>(numTargets);
 
             RandomizeMission(numTargets);
         }
