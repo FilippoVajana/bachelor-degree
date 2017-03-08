@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace SARLib.SAREnvironment
 {
@@ -143,8 +144,8 @@ namespace SARLib.SAREnvironment
         public int _numCol, _numRow;
         ///rappresenta sia la topografia dell'ambiente che la distribuzione di probabilità degli obiettivi
         public SARPoint[,] _grid;
-        ///rappresenta le posizioni reali dei target
-        public List<SARPoint> _realTargets = new List<SARPoint>();
+        ///rappresenta le posizioni stimate dei target
+        public List<SARPoint> _estimatedTargetPositions = new List<SARPoint>();
 
         #region Costruttori
         /// <summary>
@@ -173,9 +174,14 @@ namespace SARLib.SAREnvironment
             _grid = grid._grid;
             _numCol = grid._numCol;
             _numRow = grid._numRow;
-            _realTargets = grid._realTargets;
-        } 
+            _estimatedTargetPositions = grid._estimatedTargetPositions;
+        }
         #endregion
+
+        private bool IsValidPoint(IPoint p)
+        {
+            return (0 <= p.X && p.X < _numCol) && (0 <= p.Y && p.Y < _numRow);
+        }
 
         public int Distance(IPoint p1, IPoint p2)
         {
@@ -209,15 +215,18 @@ namespace SARLib.SAREnvironment
 
             //aggiungo il punto alla griglia
             _grid[x, y] = point;
-            //aggiungo il punto alla lista dei target reali
-            if (type == SARPoint.PointTypes.Target)
-                _realTargets.Add(point); //RIVEDERE!!!!!!!!!!!!!!!!
 
+            //controllo tipologia di punto
+            if (type == SARPoint.PointTypes.Target)
+            {
+                //aggiungo alla lista dei probabilit target
+                _estimatedTargetPositions.Add(point);
+            }
             //propago Confidence ai punti adiacenti
             var neighbors = this.GetNeighbors(point);
             foreach (var n in neighbors)
-            {
-                var p = n as SARPoint;
+            {                
+                var p = GetPoint(n.X, n.Y);
                 p.Confidence = confidence * 0.5;
             }
 
@@ -232,7 +241,6 @@ namespace SARLib.SAREnvironment
             }
             return null;
         }
-
         /// <summary>
         /// Adapter per GetPoint
         /// </summary>
@@ -242,28 +250,9 @@ namespace SARLib.SAREnvironment
         IPoint IGrid.GetPoint(int x, int y)
         {
             return GetPoint(x, y);
-        }
+        }              
 
-        ////rendere privato in override ToString
-        //private string ConvertToConsoleString()
-        //{
-        //    string gridString = "";
-
-        //    if (_grid != null)
-        //    {
-        //        for (int r = _numRow - 1; r >= 0; r--)
-        //        {
-        //            for (int c = 0; c < _numCol; c++)
-        //            {
-        //                gridString += String.Format(" {0} ", _grid[c, r].PrintConsoleFriendly());
-        //            }
-        //            gridString += System.Environment.NewLine;
-        //        }
-        //    }
-        //    return gridString;
-        //}
-
-        #region Randomizer
+        #region Generazione casuale
         public void RandomizeGrid(int seed, int shuffles)
         {
             Random rnd = new Random(seed);
@@ -283,7 +272,6 @@ namespace SARLib.SAREnvironment
                 iterCount++;
             }
         }
-
         public void RandomizeGrid(int seed, int numTarget, float clearAreaRatio)
         {
             const float CONFIDENCE_SPREAD_FACTOR = 0.5F;
@@ -328,21 +316,48 @@ namespace SARLib.SAREnvironment
             //PROBE
             Debug.WriteLine(new SARViewer().DisplayEnvironment(this));
         } 
+
+        public SARPoint RandomizeTargetPosition(int targetNum = 1)
+        {
+            //accedo alla lista delle possibili posizioni candidate
+            var maybeTargetPos = _estimatedTargetPositions;            
+
+            //calcolo Nmax
+            int Nmax = (int) maybeTargetPos.Sum(x => { return x.Confidence; }) * 10;
+
+            //genero il pool per l'estrazione
+            var extPool = new List<SARPoint>(Nmax);
+            foreach (var mT in maybeTargetPos)
+            {
+                for (int i = 0; i < (mT.Confidence * 10); i++)
+                {
+                    extPool.Add(mT);
+                }
+            }
+
+            //estrattore
+            var cryptoGen = RandomNumberGenerator.Create();
+            byte[] secureSequence = new byte[16];
+            cryptoGen.GetBytes(secureSequence);
+
+            var rnd = new Random(BitConverter.ToUInt16(secureSequence, 0));
+
+            //estraggo indice
+            var index = rnd.Next(Nmax);
+
+            //seleziono target
+            var targetPos = extPool[index];
+
+            return targetPos;
+        }
         #endregion
 
-        #region Metodi privati
-
-        private bool IsValidPoint(IPoint p)
-        {
-            return (0 <= p.X && p.X < _numCol) && (0 <= p.Y && p.Y < _numRow);
-        }
+        #region IO
         private static SARGrid LoadFromFile(string path)
         {
             string gridFile = File.ReadAllText(path);
             return Newtonsoft.Json.JsonConvert.DeserializeObject<SARGrid>(gridFile);
-        } 
-
-        #endregion
+        }
 
         /// <summary>
         /// Adapter per SARLib.SaveToFile
@@ -350,9 +365,9 @@ namespace SARLib.SAREnvironment
         /// <param name="destinationPath"></param>
         /// <returns></returns>
         public string SaveToFile(string destinationPath, string fileName = null)
-        {            
-            return Toolbox.Saver.SaveToJsonFile(this, destinationPath, fileName);            
+        {
+            return Toolbox.Saver.SaveToJsonFile(this, destinationPath, fileName);
         }
-                
+        #endregion
     }
 }

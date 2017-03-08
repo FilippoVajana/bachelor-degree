@@ -2,6 +2,8 @@ using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SARLib.SAREnvironment;
 using System.IO;
+using System.Collections.Generic;
+using System.Threading;
 
 namespace SARLibUnitTest
 {
@@ -124,7 +126,7 @@ namespace SARLibUnitTest
         public void ImportEnvironment()
         {
             var savedGrid = GRID;
-            var dstPath = Path.GetFullPath(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest\Output\SARGrid");
+            var dstPath = Path.GetFullPath(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest\Output\Data\ENVIRONMENTS");
 #if !DEBUG
             string outFilePath = savedGrid.SaveToFile(Directory.GetCurrentDirectory()); 
 #endif
@@ -150,6 +152,23 @@ namespace SARLibUnitTest
             string outFilePath = Path.GetFullPath(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest\bin\Debug\netcoreapp1.0");
 #endif
             grid.SaveToFile(outFilePath);
+        }
+
+        [TestMethod]
+        public void TargetPositionRandomization()
+        {
+            var testEnvPath = @"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest\Output\Data\ENVIRONMENTS";
+            var testFileName = @"R10_C10_T5.json";
+            var GRID = new SARGrid(Path.Combine(testEnvPath, testFileName));
+
+            var pickedTgtList = new List<SARPoint>(10);
+            for (int i = 0; i < pickedTgtList.Capacity; i++)
+            {
+                pickedTgtList.Add(GRID.RandomizeTargetPosition());
+                Thread.Sleep(100);
+            }
+
+            Assert.AreEqual(pickedTgtList.Capacity, 10);            
         }
     }
 }
