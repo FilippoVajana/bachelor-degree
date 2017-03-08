@@ -17,19 +17,7 @@ namespace SARLib.Toolbox
             double FILTER_ALFA = 0; //falsi negativi
             double FILTER_BETA = 0; //falsi positivi
             Dictionary<int, Func<int, double>> FILTER_MODEL = null; //modello del filtro di Bayes
-
-            //public BayesFilter(double errorRate)
-            //{                
-            //    //Likelihood
-            //    _likelihood = new Dictionary<int, double>()
-            //    {
-            //        {1, 1 - errorRate }, //p(1|1)
-            //        {0, errorRate }, //p(1|0)           
-            //    };
-
-            //    _logger = logger;
-            //}
-
+            
             public BayesFilter(double falseNegRatio, double falsePosRatio)
             {
                 FILTER_ALFA = falseNegRatio;
@@ -62,7 +50,7 @@ namespace SARLib.Toolbox
             Func<SARGrid, IPoint, int> simulate_sensor_confidence_reading = delegate (SARGrid env, IPoint sensePoint)
             {
                 sensePoint = env.GetPoint(sensePoint.X, sensePoint.Y);
-                if (env._estimatedTargetPositions.Contains(sensePoint))
+                if (env._realTarget == env.GetPoint(sensePoint.X, sensePoint.Y))
                     return 1;
                 else
                     return 0;                

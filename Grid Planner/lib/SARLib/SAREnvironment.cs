@@ -142,10 +142,14 @@ namespace SARLib.SAREnvironment
 
         //rivedere nomi e modificatori di accesso
         public int _numCol, _numRow;
-        ///rappresenta sia la topografia dell'ambiente che la distribuzione di probabilità degli obiettivi
+        //rappresenta sia la topografia dell'ambiente che la distribuzione di probabilità degli obiettivi
         public SARPoint[,] _grid;
-        ///rappresenta le posizioni stimate dei target
+        
+        //rappresenta le posizioni stimate dei target
         public List<SARPoint> _estimatedTargetPositions = new List<SARPoint>();
+
+        //rappresenta la reale posizione del target
+        public SARPoint _realTarget = null;
 
         #region Costruttori
         /// <summary>
@@ -153,6 +157,7 @@ namespace SARLib.SAREnvironment
         /// </summary>
         public SARGrid()
         { }
+
         public SARGrid(int _numCol, int _numRow)
         {
             this._numCol = Math.Abs(_numCol);
@@ -167,14 +172,20 @@ namespace SARLib.SAREnvironment
                 }
             }
         }
-        public SARGrid(string gridFilePath)
+
+        /// <summary>
+        /// Creazione dell'ambiente da file di configurazione
+        /// </summary>
+        /// <param name="sourceFile"></param>
+        public SARGrid(string sourceFile)
         {
-            var grid = LoadFromFile(gridFilePath);
+            var grid = LoadFromFile(sourceFile);
 
             _grid = grid._grid;
             _numCol = grid._numCol;
             _numRow = grid._numRow;
             _estimatedTargetPositions = grid._estimatedTargetPositions;
+            _realTarget = RandomizeTargetPosition();
         }
         #endregion
 
@@ -213,21 +224,35 @@ namespace SARLib.SAREnvironment
             //instanzio punto
             var point = new SARPoint(x, y, confidence, danger, type);
 
+            //applicazione vincoli
+            switch (point.Type)
+            {
+                case SARPoint.PointTypes.Obstacle:
+                    point.Danger = 0;
+                    point.Confidence = 0;
+                    break;
+                case SARPoint.PointTypes.Target:
+                    break;
+                case SARPoint.PointTypes.Clear:
+                    point.Confidence = 0;
+                    break;
+                default:
+                    break;
+            }
+            
             //aggiungo il punto alla griglia
             _grid[x, y] = point;
-
-            //controllo tipologia di punto
-            if (type == SARPoint.PointTypes.Target)
-            {
-                //aggiungo alla lista dei probabilit target
-                _estimatedTargetPositions.Add(point);
-            }
-            //propago Confidence ai punti adiacenti
+            
+            //propagazione dei valori di confidenza all'intorno
             var neighbors = this.GetNeighbors(point);
             foreach (var n in neighbors)
             {                
                 var p = GetPoint(n.X, n.Y);
-                p.Confidence = confidence * 0.5;
+                if (p.Type == SARPoint.PointTypes.Clear)
+                {
+                    p.Danger = point.Danger * 0.5;
+                    p.Confidence = point.Confidence * 0.5;
+                }
             }
 
             return point;
@@ -269,8 +294,18 @@ namespace SARLib.SAREnvironment
                     var p = BuildSARPoint(point.X, point.Y, rnd.NextDouble(), rnd.NextDouble(), point.Type);
                     _grid[point.X, point.Y] = p;
                 }
+                if (point.Type == SARPoint.PointTypes.Target)
+                {
+                    _estimatedTargetPositions.Add(point);
+                }
                 iterCount++;
             }
+
+            //Debug
+            var gridStr = new SARViewer().DisplayEnvironment(this);
+            var gridConfStr = new SARViewer().DisplayProperty(this, SARViewer.SARPointAttributes.Confidence);
+
+            _realTarget = RandomizeTargetPosition();
         }
         public void RandomizeGrid(int seed, int numTarget, float clearAreaRatio)
         {
@@ -317,6 +352,11 @@ namespace SARLib.SAREnvironment
             Debug.WriteLine(new SARViewer().DisplayEnvironment(this));
         } 
 
+        /// <summary>
+        /// Estrae casualmente un punto target tenendo conto del valore della prior (Confidence)
+        /// </summary>
+        /// <param name="targetNum"></param>
+        /// <returns></returns>
         public SARPoint RandomizeTargetPosition(int targetNum = 1)
         {
             //accedo alla lista delle possibili posizioni candidate
