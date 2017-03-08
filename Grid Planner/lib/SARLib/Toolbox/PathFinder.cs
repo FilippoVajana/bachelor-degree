@@ -13,7 +13,7 @@ namespace SARLib.Toolbox
     }
     public interface ISARSearchAlgoritm
     {
-        List<SARPoint> FindRoute(SARPoint start, SARPoint goal, SARGrid environment, ICostFunction costFunction);
+        List<SARPoint> FindRoute(SARPoint start, SARPoint goal, SARGrid environment, ICostFunction costFunction, decimal dangerThreshold = 1);
     }
 
     /// <summary>
@@ -24,12 +24,14 @@ namespace SARLib.Toolbox
         ISARSearchAlgoritm _algoritm;
         SARGrid _env;
         ICostFunction _costFunc;
+        decimal _dangerThreshold;
 
-        public PathFinder(ISARSearchAlgoritm searchAlgoritm, SARGrid environment, ICostFunction costFunction)
+        public PathFinder(ISARSearchAlgoritm searchAlgoritm, SARGrid environment, ICostFunction costFunction, decimal dangerThreshold = 1)
         {
             _algoritm = searchAlgoritm;
             _env = environment;
             _costFunc = costFunction;
+            _dangerThreshold = dangerThreshold;
         }
 
         /// <summary>
@@ -40,7 +42,7 @@ namespace SARLib.Toolbox
         /// <returns></returns>
         public List<SARPoint> FindRoute(SARPoint start, SARPoint goal)
         {
-            return _algoritm.FindRoute(start, goal, _env, _costFunc);
+            return _algoritm.FindRoute(start, goal, _env, _costFunc, _dangerThreshold);
         }
     }
 
@@ -50,6 +52,9 @@ namespace SARLib.Toolbox
         ICostFunction _costFunc;
         SARPoint _start;
         SARPoint _goal;
+        decimal _dangerThreshold;
+        //Debug
+        public List<decimal> _dangerThresholdLog = new List<decimal>();
 
         HashSet<SARPoint> _closedSet, _openSet;
         Dictionary<SARPoint, SARPoint> _cameFrom; //(destinazione,sorgente)
@@ -80,15 +85,62 @@ namespace SARLib.Toolbox
 
              return totalPath;
          };
-
-        public List<SARPoint> FindRoute(SARPoint start, SARPoint goal, SARGrid environment, ICostFunction costFunction)
+        
+        /// <summary>
+        /// Filtra la frontiera usando una soglia di pericolo adattiva
+        /// </summary>
+        /// <param name="border"></param>
+        /// <returns></returns>
+        private HashSet<SARPoint> FilterBorderDanger(HashSet<SARPoint> border)
         {
-            //inizializzazione
+            var filteredBorder = new HashSet<SARPoint>();
+            var dangerThreshold = _dangerThreshold;
+
+            //controllo validità frontiera
+            if (border.Count > 0)
+            {
+                //controllo frontiera
+                while (filteredBorder.Count <= 0)
+                {
+                    //Debug
+                    _dangerThresholdLog.Add(dangerThreshold);
+
+                    //filtro frontiera
+                    var fb = border.Where<SARPoint>(x => (x.Danger <= (double)dangerThreshold));
+                    foreach (var p in fb)
+                    {
+                        filteredBorder.Add(p);
+                    }
+
+                    //innalzo soglia limite
+                    dangerThreshold += dangerThreshold * (decimal)0.10; //+10% alla soglia
+                }
+            }
+
+            return filteredBorder;
+        }
+        
+        /// <summary>
+        /// Calcola il percorso ottimale fino al goal
+        /// </summary>
+        /// <param name="start"></param>
+        /// <param name="goal"></param>
+        /// <param name="environment"></param>
+        /// <param name="costFunction"></param>
+        /// <param name="dangerThreshold"></param>
+        /// <returns></returns>
+        public List<SARPoint> FindRoute(SARPoint start, SARPoint goal, SARGrid environment, ICostFunction costFunction, decimal dangerThreshold = 1)
+        {
+            //inizializzazione parametri
             _env = environment;
             _costFunc = costFunction;
             _start = start;
             _goal = goal;
-            _closedSet = new HashSet<SARPoint>();
+            _dangerThreshold = dangerThreshold;
+                        
+
+            //inizializzazione strutture dati per A*
+            _closedSet = new HashSet<SARPoint>();            
             _openSet = new HashSet<SARPoint>() { _start};
             _cameFrom = new Dictionary<SARPoint, SARPoint>();
             _gScore = new Dictionary<SARPoint, double>(); 
@@ -115,6 +167,9 @@ namespace SARLib.Toolbox
             //espansione e valutazione della frontiera
             while (_openSet.Count > 0)
             {
+                //filtro soglia di pericolo adattiva
+                _openSet = FilterBorderDanger(_openSet);
+
                 //seleziono i costi f dei nodi aperti
                 var openCosts = _fScore.Where(x => _openSet.Contains(x.Key));   
                 

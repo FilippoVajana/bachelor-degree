@@ -242,20 +242,29 @@ namespace SARLibUnitTest
         public void AdaptiveDangerThreshold()
         {
             //PERCORSO 1
+            var searchAlgoritm = new AStar();
             var costFunc = new SARCostFunction();
-            var planner = new RoutePlanner(GRID, costFunc);
-            //carico mappa prova
-
+            decimal dangerThreshold = (decimal) 0.2;
+            
+            var planner = new RoutePlanner(searchAlgoritm, GRID, costFunc, dangerThreshold);
+            
             //pianifico percorso
-            var startPos = GRID.GetPoint(0, 2);
-            var goalPos = GRID.GetPoint(4, 3);
+            var startPos = GRID.GetPoint(0, 0);
+            var goalPos = GRID.GetPoint(4, 5);
             var route = planner.ComputeRoute(startPos, goalPos);
 
             //visualizzazione grafica
             var gridStr = VIEWER.DisplayEnvironment(GRID);
             var routeStr = VIEWER.DisplayRoute(GRID, route);
 
-            Assert.AreEqual(6, route.Route.Count); //lunghezza percorso
+            //costruisco csv per l'andamento della soglia di pericolo
+            var dangerThresholdLogCsv = "A* Danger Threshold Value" + Environment.NewLine;
+            foreach (var l in searchAlgoritm._dangerThresholdLog)
+            {
+                dangerThresholdLogCsv += $"{l.ToString()}{Environment.NewLine}";
+            }
+            
+            Assert.AreEqual(10, route.Route.Count); //lunghezza percorso
         }
     }
 }

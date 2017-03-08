@@ -317,9 +317,10 @@ namespace SARLib.SARPlanner
     /// </summary>
     public class RoutePlanner
     {
+        ISARSearchAlgoritm _algoritm;
         SARGrid _env;
         ICostFunction _cost;
-        List<SARPoint> _route;        
+        decimal _dangerThreshold;     
                 
         public RoutePlanner(SARGrid environment, ICostFunction costFunction)
         {
@@ -327,18 +328,26 @@ namespace SARLib.SARPlanner
             _cost = costFunction;
         }        
 
+        public RoutePlanner(ISARSearchAlgoritm searchAlgoritm, SARGrid environment, ICostFunction costFunction, decimal dangerThreshold = 1)
+        {
+            _algoritm = searchAlgoritm;
+            _env = environment;
+            _cost = costFunction;
+            _dangerThreshold = dangerThreshold;
+        }
+
         public SARRoute ComputeRoute(SARPoint currentPosition, SARPoint goalPosition)
         {
             //inizializzo modulo ricerca percorso
-            ISARPathFinder pathFinder = new PathFinder(new AStar(), _env, _cost);
+            ISARPathFinder pathFinder = new PathFinder(_algoritm, _env, _cost, _dangerThreshold);
             
             //inizializzo route
-            _route = new List<SARPoint>();
+            var route = new List<SARPoint>();
 
             //applicazione di A*
-            _route = pathFinder.FindRoute(currentPosition, goalPosition);
+            route = pathFinder.FindRoute(currentPosition, goalPosition);
 
-            return new SARRoute(_route);
+            return new SARRoute(route);
         }        
     }
 
