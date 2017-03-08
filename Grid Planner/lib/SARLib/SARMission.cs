@@ -13,13 +13,11 @@ namespace SARLib.SARMission
 
         //Proprietà Missione SAR
         SARGrid Environment { get; set; }
-        ISARRoute Route { get; set; }
+        SARRoute Route { get; set; }
 
-        //IPoint Start { get; set; }
+        SARPoint Start { get; set; }
         List<SARPoint> Goals { get; set; }
-
-        ///aggiungere i log circa le modifiche all'ambiente
-        ///1) variazione della confidenza
+                
     }
 
     /// <summary>
@@ -30,8 +28,8 @@ namespace SARLib.SARMission
     {
         #region Proprietà
         public SARGrid Environment { get; set; }
-        public ISARRoute Route { get; set; }
-        public IPoint Start { get; set; }
+        public SARRoute Route { get; set; }
+        public SARPoint Start { get; set; }
         public List<SARPoint> Goals { get; set; }
         #endregion
 
@@ -44,12 +42,12 @@ namespace SARLib.SARMission
         /// <param name="env"></param>
         /// <param name="route"></param>
         /// <param name="start"></param>
-        public SARMission(SARGrid env, SARRoute route, IPoint start)
+        public SARMission(SARGrid env, SARRoute route, SARPoint start)
         {
             Environment = env;
             Route = route;
             Start = start;
-            Goals = env._realTargets;
+            Goals = env._estimatedTargetPositions;
         }
         //genera missione random
         public SARMission(int envRow, int envCol, int numTargets)

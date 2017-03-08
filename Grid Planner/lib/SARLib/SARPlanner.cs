@@ -199,7 +199,7 @@ namespace SARLib.SARPlanner
             _strategy = strategy;
 
             _route = null;
-            _goals = environment._realTargets;
+            _goals = environment._estimatedTargetPositions;
         }
         //costanti per filtro Bayes
         const double FILTER_FALSENEG_RATIO = 0.2;
