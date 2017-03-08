@@ -11,6 +11,7 @@ namespace SARLibUnitTest
     [TestClass]
     public class PlannerUT
     {
+        const string GRID_FILE_PATH = @"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest\Output\Data\ENVIRONMENTS\R10-C10-T6-test_soglia_adattiva_danger.json";
         const int GRID_ROWS = 5;
         const int GRID_COLUMNS = 8;
         const int GRID_SEED_1 = 10;
@@ -26,8 +27,7 @@ namespace SARLibUnitTest
         #region Metodi ausiliari
         private SARGrid GetRndGrid()
         {
-            var grid = new SARGrid(GRID_COLUMNS, GRID_ROWS);
-            grid.RandomizeGrid(GRID_SEED_1, RND_SHUFFLE);
+            var grid = new SARGrid(GRID_FILE_PATH);
             return grid;
         }
         private SARGrid GetRndGrid(int rndSeed)

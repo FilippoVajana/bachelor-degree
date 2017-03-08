@@ -35,8 +35,7 @@ namespace SARLibUnitTest
         #region Metodi ausiliari
         private SARGrid GetRndGrid()
         {
-            var grid = new SARGrid(GRID_FILE_PATH);
-            //grid.RandomizeGrid(GRID_SEED_1, RND_SHUFFLE);
+            var grid = new SARGrid(GRID_FILE_PATH);            
             return grid;
         }
         private SARGrid GetRndGrid(int rndSeed)
