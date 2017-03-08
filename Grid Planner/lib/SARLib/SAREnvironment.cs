@@ -323,17 +323,19 @@ namespace SARLib.SAREnvironment
             var maybeTargetPos = _estimatedTargetPositions;            
 
             //calcolo Nmax
-            int Nmax = (int) maybeTargetPos.Sum(x => { return x.Confidence; }) * 10;
+            int Nmax = (int) maybeTargetPos.Sum(x => { return (x.Confidence * 10); });
 
             //genero il pool per l'estrazione
-            var extPool = new List<SARPoint>(Nmax);
+            var extPool = new List<SARPoint>();
             foreach (var mT in maybeTargetPos)
-            {
+            {      
                 for (int i = 0; i < (mT.Confidence * 10); i++)
                 {
                     extPool.Add(mT);
                 }
             }
+            //debug
+            extPool.ForEach(x => { Debug.WriteLine($"({x.X},{x.Y})"); });
 
             //estrattore
             var cryptoGen = RandomNumberGenerator.Create();
