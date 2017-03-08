@@ -115,7 +115,7 @@ namespace SARLib.SARPlanner
             DR = DR / Area;
             CR = Math.Pow(CR / Area, _cExp);
 
-            utility = CR * (Math.Pow(1 + L * DR, _dExp));
+            utility = CR * (Math.Pow(1 + 1/(L * DR), _dExp));
 
             return (!double.IsNaN(utility))? utility : 0;
         }

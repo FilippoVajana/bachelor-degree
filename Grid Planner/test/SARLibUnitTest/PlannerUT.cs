@@ -5,6 +5,7 @@ using System.Text;
 using SARLib.SAREnvironment;
 using SARLib.SARPlanner;
 using System.Diagnostics;
+using SARLib.Toolbox;
 
 namespace SARLibUnitTest
 {
@@ -20,9 +21,12 @@ namespace SARLibUnitTest
         const int UTILITY_RADIUS = 2;
         const double UTILITY_CONF_EXP = 0.7;
         const double UTILITY_DNG_EXP = 1 - UTILITY_CONF_EXP;
+        const double FILTER_ALFA = 0.2;
+        const double FILTER_BETA = 0.2;
 
         SARGrid GRID = null;
         SARViewer VIEWER = null;
+        BayesEngine.BayesFilter FILTER = new BayesEngine.BayesFilter(FILTER_ALFA, FILTER_BETA);
 
         #region Metodi ausiliari
         private SARGrid GetRndGrid()
@@ -43,18 +47,17 @@ namespace SARLibUnitTest
         public void TestInitialize()
         {
             GRID = GetRndGrid();
-            VIEWER = new SARViewer();
-            var gridStr = VIEWER.DisplayEnvironment(GRID);
+            FILTER.NormalizeConfidence(GRID);
+            VIEWER = new SARViewer();            
         }
 
         [TestMethod]
         public void CostFunction()
         {
-            var costFun = new SARCostFunction();
-            //var GRID = GetRndGrid();
+            var costFun = new SARCostFunction();            
 
-            var p1 = GRID.GetPoint(3, 4);
-            var pCurr = GRID.GetPoint(0, 0);
+            var p1 = GRID.GetPoint(3, 4);//goal
+            var pCurr = GRID.GetPoint(0, 0);//start
 
             var cost = costFun.EvaluateCost(pCurr, p1);
 
@@ -63,17 +66,21 @@ namespace SARLibUnitTest
 
         [TestMethod]
         public void UtilityFunction()
-        {      
+        {
             var utilityFun = new SARUtilityFunction(UTILITY_RADIUS, UTILITY_DNG_EXP, UTILITY_CONF_EXP);
-            //var GRID = GetRndGrid();
 
-            var p1 = GRID.GetPoint(3, 4);
             var pCurr = GRID.GetPoint(0, 0);
+            var p1 = GRID.GetPoint(9, 9);
+            var utilityValue1 = utilityFun.ComputeUtility(p1, pCurr, GRID);
+            Assert.AreEqual(0.142.ToString("N3"), utilityValue1.ToString("N3"));
 
-            var utilityValue = utilityFun.ComputeUtility(p1, pCurr, GRID);
+            var p2 = GRID.GetPoint(0, 9);
+            var utilityValue2 = utilityFun.ComputeUtility(p2, pCurr, GRID);
+            Assert.AreEqual(0.142.ToString("N3"), utilityValue2.ToString("N3"));
 
-            Assert.AreEqual(0.771.ToString("N3"), utilityValue.ToString("N3"));
-
+            var p3 = GRID.GetPoint(0, 2);
+            var utilityValue3 = utilityFun.ComputeUtility(p3, pCurr, GRID);
+            Assert.AreEqual(0.191.ToString("N3"), utilityValue3.ToString("N3"));
         }
 
         [TestMethod]
