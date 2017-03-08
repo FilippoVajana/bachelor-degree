@@ -11,8 +11,14 @@ namespace SARLibUnitTest
     [TestClass]
     public class BayesUT
     {
+        ///
+        ///Lavoro con le probabilità
+        ///p(0) -> certezza di non presenza
+        ///p(1) -> certezza di presenza
+        ///
+
         #region COSTANTI
-        const string GRID_FILE_PATH = @"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest\Output\Data\ENVIRONMENTS\R10_C10_T5.json";
+        const string GRID_FILE_PATH = @"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest\Output\Data\ENVIRONMENTS\R10-C10-T6-test_soglia_adattiva_danger.json";
         const int GRID_ROWS = 5;
         const int GRID_COLUMNS = 8;
         const int GRID_SEED_1 = 10;
@@ -60,75 +66,89 @@ namespace SARLibUnitTest
         {
             //debug
             var gridConfStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
+            var gridDangStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Danger);
             var gridStr = VIEWER.DisplayEnvironment(GRID);
-
-            //imposto posizione target
-            //GRID._realTarget = GRID.GetPoint(2, 1);
-
+            
             //punto di sensing
-            var sensePoint = GRID.GetPoint(2, 1);
+            var sensePoint = GRID.GetPoint(0, 3);
 
             var posterior = FILTER.ComputeConfidencePosterior(sensePoint, sensePoint, 1);
-            Assert.AreEqual(0.522.ToString("N3"), posterior.ToString("N3"));
+            Assert.AreEqual(0.800.ToString("N3"), posterior.ToString("N3"));
 
             var p1 = GRID.GetPoint(4, 3); //deve calare
             posterior = FILTER.ComputeConfidencePosterior(sensePoint, p1, 1);
-            Assert.AreEqual(0.019.ToString("N3"), posterior.ToString("N3"));
+            Assert.AreEqual(0.000.ToString("N3"), posterior.ToString("N3"));
 
             p1 = GRID.GetPoint(4, 4); //ostacolo
             posterior = FILTER.ComputeConfidencePosterior(sensePoint, p1, 1);
             Assert.AreEqual(0.000.ToString("N3"), posterior.ToString("N3"));
 
-            //debug
-            gridConfStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
         }
 
         [TestMethod]
         public void FilterPoint_SenseFalse()
-        {
-            //debug
-            var gridConfStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
+        {    
+            //punto di sensing
+            var sensePoint = GRID.GetPoint(0, 3); //auto aggiornamento
 
-            var sensePoint = GRID.GetPoint(2, 1); //auto aggiornamento
             var posterior = FILTER.ComputeConfidencePosterior(sensePoint, sensePoint, 0);
-            Assert.AreEqual(0.064.ToString("N3"), posterior.ToString("N3"));
+            Assert.AreEqual(0.200.ToString("N3"), posterior.ToString("N3"));
 
-            var p1 = GRID.GetPoint(4, 3); //deve salire
-            posterior = FILTER.ComputeConfidencePosterior(sensePoint, p1, 0);
-            Assert.AreEqual(0.038.ToString("N3"), posterior.ToString("N3"));
-
-            p1 = GRID.GetPoint(4, 4); //ostacolo
+            var p1 = GRID.GetPoint(4, 3);
             posterior = FILTER.ComputeConfidencePosterior(sensePoint, p1, 0);
             Assert.AreEqual(0.000.ToString("N3"), posterior.ToString("N3"));
 
-            //debug
-            gridConfStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
+            p1 = GRID.GetPoint(1, 2); //deve salire
+            posterior = FILTER.ComputeConfidencePosterior(sensePoint, p1, 0);
+            Assert.AreEqual(0.800.ToString("N3"), posterior.ToString("N3"));            
         }
 
         [TestMethod]
         public void FilterGrid_SenseTrue()
         {
-            //debug
+            //normalizzo
+            FILTER.NormalizeConfidence(GRID);
+
+            //debug pre
             var gridConfStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
 
-            var sensePoint = GRID.GetPoint(0, 0);
+            var sensePoint = GRID.GetPoint(0, 3);
             var updateGrid = FILTER.UpdateEnvironmentConfidence(GRID, sensePoint, 1);
 
-            //debug
+            //debug post
             gridConfStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
+
+            //controllo normalizzazione
+            double confidenceSum = 0;
+            foreach (var p in GRID._grid)
+            {
+                confidenceSum += p.Confidence;
+            }
+            Assert.AreEqual(1.ToString(), confidenceSum.ToString());
         }
 
         [TestMethod]
         public void FilterGrid_SenseFalse()
         {
-            //debug
+            //normalizzo
+            FILTER.NormalizeConfidence(GRID);
+
+            //debug pre
             var gridConfStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
 
-            var sensePoint = GRID.GetPoint(0, 0);
+            var sensePoint = GRID.GetPoint(0, 3);
             var updateGrid = FILTER.UpdateEnvironmentConfidence(GRID, sensePoint, 0);
 
-            //debug
+            //debug post
             gridConfStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
+
+            //controllo normalizzazione
+            double confidenceSum = 0;
+            foreach (var p in GRID._grid)
+            {
+                confidenceSum += p.Confidence;
+            }
+            Assert.AreEqual(1.ToString(), confidenceSum.ToString());
         }
 
         [TestMethod]

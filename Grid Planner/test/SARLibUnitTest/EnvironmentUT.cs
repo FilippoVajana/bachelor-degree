@@ -193,6 +193,6 @@ namespace SARLibUnitTest
             File.WriteAllText(Path.Combine(testEnvPath, "extractions_result.csv"), resultFile);  
             #endregion
 #endif
-        }
+        }        
     }
 }

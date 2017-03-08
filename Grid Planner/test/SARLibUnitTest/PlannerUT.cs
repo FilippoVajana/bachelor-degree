@@ -72,7 +72,7 @@ namespace SARLibUnitTest
 
             var utilityValue = utilityFun.ComputeUtility(p1, pCurr, GRID);
 
-            Assert.AreEqual(0.708.ToString("N3"), utilityValue.ToString("N3"));
+            Assert.AreEqual(0.771.ToString("N3"), utilityValue.ToString("N3"));
 
         }
 
@@ -229,6 +229,26 @@ namespace SARLibUnitTest
 
             //pianifico missione
             var mission = planner.GenerateMission();
+        }
+
+        [TestMethod]
+        public void AdaptiveDangerThreshold()
+        {
+            //PERCORSO 1
+            var costFunc = new SARCostFunction();
+            var planner = new RoutePlanner(GRID, costFunc);
+            //carico mappa prova
+
+            //pianifico percorso
+            var startPos = GRID.GetPoint(0, 2);
+            var goalPos = GRID.GetPoint(4, 3);
+            var route = planner.ComputeRoute(startPos, goalPos);
+
+            //visualizzazione grafica
+            var gridStr = VIEWER.DisplayEnvironment(GRID);
+            var routeStr = VIEWER.DisplayRoute(GRID, route);
+
+            Assert.AreEqual(6, route.Route.Count); //lunghezza percorso
         }
     }
 }
