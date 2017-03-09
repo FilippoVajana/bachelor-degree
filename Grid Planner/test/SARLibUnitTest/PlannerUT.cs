@@ -261,7 +261,7 @@ namespace SARLibUnitTest
             var dangerThresholdLogCsv = "A* Danger Threshold Value" + Environment.NewLine;
             foreach (var l in searchAlgoritm._dangerThresholdLog)
             {
-                dangerThresholdLogCsv += $"{l.ToString()}{Environment.NewLine}";
+                dangerThresholdLogCsv += $"{l.ToString()};{Environment.NewLine}";
             }
             
             Assert.AreEqual(10, route.Route.Count); //lunghezza percorso
