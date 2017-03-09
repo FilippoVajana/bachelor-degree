@@ -249,23 +249,7 @@ namespace SARLib.SARPlanner
 
             return mission;
         }
-
-        ///// <summary>
-        ///// Rappresenta un nodo del grafo usato per l'esplorazione
-        ///// </summary>
-        //protected class Node //rivedere in relazione ad A*
-        //{
-        //    public SARPoint point;
-        //    public double GCost { get; set; } //costo dall'origine
-        //    public double FCost { get; set; } //costo aggregato g + h
-
-        //    public Node(SARPoint sarPoint)
-        //    {
-        //        this.point = sarPoint;
-        //        GCost = double.MaxValue;
-        //        FCost = 0;
-        //    }
-        //}
+        
     }
 
     /// <summary>
@@ -388,38 +372,6 @@ namespace SARLib.SARPlanner
             var updatedGrid = _bayesFilter.UpdateEnvironmentConfidence(environment, sensePoint, -1);
 
             return updatedGrid;
-        }
-    }
-
-
-
-    public class SearchLogger
-    {
-
-        public string SaveToFile(string logsDirPath)
-        {
-            //definisco nome log
-            string logName = $"{GetType().Name}_{DateTime.Now.ToUniversalTime()}";
-
-            //serializzo l'oggetto log
-            string json = JsonConvert.SerializeObject(Log);
-
-            //salvo il log
-            string fullPath = $"{logsDirPath}\\{logName}";
-            var logFile = File.CreateText(fullPath);
-
-            return fullPath;
-        }
-        public SearchLog Log { get; }
-
-        public class SearchLog
-        {
-            internal SearchLog()
-            { }
-
-            private double totalStep;
-            private double totalTime;
-            private int totalOpenNodes;
         }
     }    
 }
