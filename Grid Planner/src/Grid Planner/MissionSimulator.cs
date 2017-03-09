@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using SARLib.SAREnvironment;
 using SARLib.SARPlanner;
 using System.IO;
-
+using System.Diagnostics;
+using SARLib.SARMission;
 
 namespace SARSimulator
 {
@@ -163,7 +164,7 @@ namespace SARSimulator
             var dangerThreshold = schema.DangerThreshold;
 
             //definisco nome istanza
-            var instanceId = schema.GetId();
+            var instanceId = schema.GetID();
 
             //genero istanza
             var instance = new SimulationInstance(env, riskParam, dangerThreshold, instanceId);
@@ -173,18 +174,56 @@ namespace SARSimulator
 
         public List<SimulationInstance> BuildInstancesPool()
         {
+            decimal DANGER_THRESHOLD = (decimal) 0.2;
+            int TARGET_NUM = 1;
+
             ///1- creo schemi istanze
             ///2- creo istanze
             ///
 
-            //genero schemi delle istanze
+            //1- Pool di schemi
             var schemes = new List<SimulationInstanceSchema>();
 
+            for (int iMolt = 0; iMolt < _instanceMolteplicy; iMolt++)
+            {
+                //ambienti
+                foreach (var envType in _envMap.Keys)
+                {                    
+
+                    //distribuzioni prior
+                    foreach (var priorType in _priorMap.Keys)
+                    {
+                        
+                        //distribuzioni pericolo
+                        foreach (var dangerType in _dangerMap.Keys)
+                        {
+                            
+                            //comportamenti
+                            foreach (var aParam in _riskMap.Keys)
+                            {
+                                var schema = new SimulationInstanceSchema(envType, priorType, dangerType, aParam, DANGER_THRESHOLD, TARGET_NUM);
+                                schemes.Add(schema);
+                            }
+                        }
+                    }
+                }
+            }
+
+            //Debug
+            Debug.WriteLine($"SCHEME POOL ({schemes.Count})");
+            schemes.ForEach(x => Debug.WriteLine(x.GetID()));
+
+            //2- Pool di istanze
+            var instancesPool = new List<SimulationInstance>();
+            //genero pool
+            schemes.ForEach(x => instancesPool.Add(BuildInstance(x)));
+
+            //Debug
+            Debug.WriteLine($"INSTANCES POOL ({schemes.Count})");
+            instancesPool.ForEach(x => Debug.WriteLine(x.ID));
 
 
-
-
-            return null;
+            return instancesPool;
         }
 
 
@@ -216,7 +255,7 @@ namespace SARSimulator
             DangerThreshold = dangerThreshold;
         }
 
-        internal string GetId()
+        internal string GetID()
         {
             var id = string.Empty;
 
@@ -235,7 +274,8 @@ namespace SARSimulator
     public class SimulationInstance
     {
         //ID istanza
-        public string _instanceName;
+        string _instanceName;
+        public string ID { get { return _instanceName; } }
 
         //parametri simulazione
         public SARGrid _env;
@@ -264,15 +304,23 @@ namespace SARSimulator
             //assegno id
             _instanceName = name;
         }
-
+             
 
         //passare parametri per inizializzazione di SARPlanner
-        public void RunInstance(SimulationLogger logger)
+        public ISARMission RunInstance(SimulationLogger logger)
         {
             ///inserire logger di riferimento
             ///
             //inizializzo pianificatore
             var planner = new SARPlanner(_env, _entryPoint, _utilityFunc, _costFunc, _goalStrat);
+
+            //avvio simulazione
+
+            //avvio clock
+            var mission = planner.GenerateMission();
+            //stop clock
+
+            return mission;
         }
     }
 
