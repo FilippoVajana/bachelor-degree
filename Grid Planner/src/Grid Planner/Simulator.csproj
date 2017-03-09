@@ -10,8 +10,11 @@
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Data - Copy\**" />
     <Compile Remove="Output\**" />
+    <EmbeddedResource Remove="Data - Copy\**" />
     <EmbeddedResource Remove="Output\**" />
+    <None Remove="Data - Copy\**" />
     <None Remove="Output\**" />
   </ItemGroup>
   <ItemGroup>
@@ -20,5 +23,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\lib\SARLib\SARLib.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Data\Logs\" />
   </ItemGroup>
 </Project>

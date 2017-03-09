@@ -12,35 +12,33 @@ namespace GridPlanner
     {        
         public static void Main(string[] args)
         {
-            //var sarEnv = new SARGrid(10, 20);            
+            //APP DIRECTORIES 
+            string APP_DATA_ROOT = Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "Data")).FullName;
+            string APP_ENVS_ROOT = Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "Data", "Environments")).FullName;
 
-            //sarEnv.RandomizeGrid(10, 5, .65F);
-            //Console.WriteLine(new SARViewer().DisplayEnvironment(sarEnv));
+            //SIMULATOR
+            SARSimulator.MissionSimulator SIMULATOR = new SARSimulator.MissionSimulator(APP_ENVS_ROOT);
 
-            //var json = sarEnv.SaveToFile(Directory.GetCurrentDirectory());
-            //Console.WriteLine($"Saved JSON At {json}");
-
-                      
 
             //PROVA CREAZIONE/CANCELLAZIONE TASK
 
-            //sorgente segnale timeout simulazione
-            CancellationTokenSource cancTokenSource = new CancellationTokenSource(4000);
-            List<Task> taskPool = new List<Task>(4);
+            ////sorgente segnale timeout simulazione
+            //CancellationTokenSource cancTokenSource = new CancellationTokenSource(4000);
+            //List<Task> taskPool = new List<Task>(4);
 
-            //creazione pool
-            for (int i = 0; i < 4; i++)
-            {
-                taskPool.Add(new Task(() => { SimulateWorkload(cancTokenSource.Token); }));
-            }
+            ////creazione pool
+            //for (int i = 0; i < 4; i++)
+            //{
+            //    taskPool.Add(new Task(() => { SimulateWorkload(cancTokenSource.Token); }));
+            //}
 
-            //avvio dei task
-            foreach (var t in taskPool)
-            {
-                t.Start();
-            }
+            ////avvio dei task
+            //foreach (var t in taskPool)
+            //{
+            //    t.Start();
+            //}
 
-            Task.WaitAll(taskPool.ToArray());
+            //Task.WaitAll(taskPool.ToArray());
 
             Console.Write("\nPress Enter to exit");
             Console.ReadKey();
