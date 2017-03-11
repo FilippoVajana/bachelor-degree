@@ -52,6 +52,61 @@ namespace SARSimulator
     public class SimulationInstancesPoolBuilder
     {
         #region Funzioni Distribuzione Probabilità
+        const int TARGET_POINTS = 4;
+        const int PROB_EXPANSION_RADIUS = 3;
+
+        static Func<SARGrid, int, List<SARPoint>> get_random_points = delegate (SARGrid env, int pointsNum)
+        {
+            var list = new List<SARPoint>(pointsNum);
+            var rnd = new Random();
+            var col = env._numCol - 1;
+            var row = env._numRow - 1;
+            int pc = pointsNum;
+
+            while (pc > 0)
+            {
+                var x = rnd.Next(0, col);
+                var y = rnd.Next(0, row);
+                var p = env.GetPoint(x, y);
+
+                if (p.Type != SARPoint.PointTypes.Obstacle)
+                {
+                    list.Add(p);
+                    pc--;
+                }                
+            }
+
+            return list;
+        };
+        static Func<SARGrid, SARPoint, int, SARGrid> expand_probability = delegate (SARGrid env, SARPoint point, int radius)
+        {
+            var border = new HashSet<SARPoint>() { point };
+            
+            //genero la frontiera
+            while (radius > 0)
+            {
+                var borderTmp = new HashSet<SARPoint>();
+                foreach (var p in border)
+                {
+                    var neighbors = (SARPoint[]) env.GetNeighbors(p);
+                    foreach (var pNear in neighbors)
+                    {                        
+                        borderTmp.Add(pNear);
+                    }
+                }
+                radius--;
+                border = borderTmp;
+            }
+
+            //assegno probabilità
+            foreach (var p in border)
+            {
+                p.Confidence = point.Confidence / (1 + env.Distance(point, p));
+                p.Danger = point.Danger / (1 + env.Distance(point, p));
+            }
+            
+            return env;
+        };
 
         static Func<SARGrid, SARGrid> generate_uniform_prior = delegate (SARGrid env)
         {
@@ -67,17 +122,22 @@ namespace SARSimulator
         };
         static Func<SARGrid, SARGrid> generate_kdist_prior = delegate (SARGrid env)
         {
+            //ottengo k punti
+            var points = get_random_points(env, TARGET_POINTS);
+
+            //assegno probabilità
             var rnd = new Random();
-
-            foreach (var p in env._grid)
+            foreach (var p in points)
             {
-                if (p.Type == SARPoint.PointTypes.Clear && p.Confidence == 0)//non impostato manualmente
-                {
-                    var r = ((double)rnd.Next(0, 3)) / 10;
-                    p.Confidence = r;//aggiunta di rumore
-                }
-            }
+                var conf = ((double) rnd.Next(1, 11)) / 10;
+                p.Confidence = conf;
 
+                //diffondo probabilità
+                env = expand_probability(env, p, PROB_EXPANSION_RADIUS);
+            }
+            
+            //aggiorno lista possibili target
+            env._estimatedTargetPositions = env.GetPossibleTargetPositions();
             return env;
         };
         static Func<SARGrid, SARGrid> generate_uniform_danger = delegate (SARGrid env)
@@ -113,6 +173,8 @@ namespace SARSimulator
         int _instanceMolteplicy;
         List<string> _envsPaths;
 
+        #region Mappe parametri
+
         Dictionary<SimulationInstanceSchema.EnvironmentType, string> _envMap = new Dictionary<SimulationInstanceSchema.EnvironmentType, string>();
         Dictionary<SimulationInstanceSchema.PriorDistribution, Func<SARGrid, SARGrid>> _priorMap = new Dictionary<SimulationInstanceSchema.PriorDistribution, Func<SARGrid, SARGrid>>()
         {
@@ -131,15 +193,16 @@ namespace SARSimulator
             {SimulationInstanceSchema.RiskPropensity.Risk, 0.2 }
         };
 
-       
+        #endregion
+
         public SimulationInstancesPoolBuilder(List<string> envsPaths, int instanceMolteplicy)
         {
             _instanceMolteplicy = instanceMolteplicy;
             _envsPaths = envsPaths;
 
             //inizializzo envMap
-            _envMap.Add(SimulationInstanceSchema.EnvironmentType.Small, _envsPaths.Find(x => x.Contains("S")));
-            _envMap.Add(SimulationInstanceSchema.EnvironmentType.Medium, _envsPaths.Find(x => x.Contains("M")));
+            _envMap.Add(SimulationInstanceSchema.EnvironmentType.Small, _envsPaths.Find(x => x.Contains("S-T4-CLEAR")));
+            _envMap.Add(SimulationInstanceSchema.EnvironmentType.Medium, _envsPaths.Find(x => x.Contains("M-T4-CLEAR")));
             _envMap.Add(SimulationInstanceSchema.EnvironmentType.Large, _envsPaths.Find(x => x.Contains("L")));
         }
 
@@ -156,7 +219,7 @@ namespace SARSimulator
 
             //estraggo target
             env._realTarget = env.RandomizeTargetPosition(schema.TargetNum);
-
+            
             //parametro rischio
             var riskParam = _riskMap[schema.RiskParam];
 
@@ -225,9 +288,7 @@ namespace SARSimulator
 
             return instancesPool;
         }
-
-
-        
+                
     }
 
     public class SimulationInstanceSchema

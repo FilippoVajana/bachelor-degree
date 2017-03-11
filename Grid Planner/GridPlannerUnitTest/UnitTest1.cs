@@ -27,14 +27,14 @@ namespace GridPlannerUnitTest
         {
             var SIM = new MissionSimulator(ENVS_DIR);
 
-            var envs = new List<string>()
-            {
-                "S-T4.json",
-                "M-T4.json",
-                "L-T4.json"
-            };
+            //var envs = new List<string>()
+            //{
+            //    "S-T4.json",
+            //    "M-T4.json",
+            //    "L-T4.json"
+            //};
 
-            Assert.AreEqual(envs.Count, SIM.EnvPaths.Count);
+            Assert.AreEqual(5, SIM.EnvPaths.Count);
         }
 
         [TestMethod]
@@ -60,7 +60,19 @@ namespace GridPlannerUnitTest
             Assert.AreEqual(schemaName, instance.ID);
             //Debug
             var viewer = new SARViewer().DisplayProperty(instance._env, SARViewer.SARPointAttributes.Confidence);
+            instance._env.SaveToFile(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\GridPlannerUnitTest\Data\Logs\", schemaName);
 
+            /////////////////////////////
+            schema = new SimulationInstanceSchema(SimulationInstanceSchema.EnvironmentType.Small, SimulationInstanceSchema.PriorDistribution.KDistributed, SimulationInstanceSchema.DangerDistribution.KDistributed, SimulationInstanceSchema.RiskPropensity.Normal, (decimal)0.2);
+            schemaName = @"INSTANCE_Small_KDistributed_KDistributed_1_Normal_0,2";
+            instance = instanceBuilder.BuildInstance(schema);
+            Assert.AreEqual(schemaName, instance.ID);
+            //Debug
+            viewer = new SARViewer().DisplayEnvironment(instance._env);
+            viewer = new SARViewer().DisplayProperty(instance._env, SARViewer.SARPointAttributes.Confidence);
+            instance._env.SaveToFile(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\GridPlannerUnitTest\Data\Logs\", schemaName);
+
+            /////////////////////////////
             schema = new SimulationInstanceSchema(SimulationInstanceSchema.EnvironmentType.Medium, SimulationInstanceSchema.PriorDistribution.KDistributed, SimulationInstanceSchema.DangerDistribution.KDistributed, SimulationInstanceSchema.RiskPropensity.Normal, (decimal)0.2);
             schemaName = @"INSTANCE_Medium_KDistributed_KDistributed_1_Normal_0,2";
             instance = instanceBuilder.BuildInstance(schema);
@@ -68,6 +80,7 @@ namespace GridPlannerUnitTest
             //Debug
             viewer = new SARViewer().DisplayProperty(instance._env, SARViewer.SARPointAttributes.Confidence);
             viewer = new SARViewer().DisplayProperty(instance._env, SARViewer.SARPointAttributes.Danger);
+            instance._env.SaveToFile(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\GridPlannerUnitTest\Data\Logs\", schemaName);
         }
 
         [TestMethod]
