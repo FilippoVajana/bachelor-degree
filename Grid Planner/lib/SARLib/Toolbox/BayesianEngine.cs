@@ -132,7 +132,7 @@ namespace SARLib.Toolbox
                     point.Confidence = ComputeConfidencePosterior(senseP, point, senseResult);
                 }
 
-                //normalizzo la distribuzione di probabilità
+                //normalizzo la distribuzione di probabilità (forse non server)
                 NormalizeConfidence(environment);
 
                 return environment;

@@ -138,7 +138,7 @@ namespace SARLib.SAREnvironment
             return gridString;
         }
 
-        public object DisplayRoute(SARGrid environment, SARRoute route)
+        public object DisplayRoute(SARGrid environment, List<SARPoint> route)
         {
             var baseGridStr = DisplayEnvironment(environment);
             var gridRouteStr = String.Empty;
@@ -153,7 +153,7 @@ namespace SARLib.SAREnvironment
                 {
                     for (int c = 0; c < _numCol; c++)
                     {
-                        if (!route.Route.Contains(_env._grid[c, r]))
+                        if (!route.Contains(_env._grid[c, r]))
                         {
                             gridRouteStr += String.Format(" {0} ", _env._grid[c, r].PrintConsoleFriendly());
                         }
