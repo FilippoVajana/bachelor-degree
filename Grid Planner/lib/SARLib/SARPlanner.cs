@@ -21,13 +21,16 @@ namespace SARLib.SARPlanner
     }
     /// <summary>
     /// Funzione di costo per applicazioni SAR.
-    /// Il costo viene valutato tenendo conto della sola distanza in norma Manhattan
+    /// Il costo viene valutato tenendo conto della distanza in norma Manhattan
+    /// e del livello di pericolo
     /// </summary>
     public class SARCostFunction : ICostFunction
     {
+        const int DANGER_MAGNIFIER = 10;
+
         public double EvaluateCost(SARPoint point, SARPoint goal)
         {
-            var cost = Math.Abs(point.X - goal.X) + Math.Abs(point.Y - goal.Y);
+            var cost = Math.Abs(point.X - goal.X) + Math.Abs(point.Y - goal.Y) + (point.Danger * DANGER_MAGNIFIER);
             return cost;
         }
     }
@@ -68,6 +71,10 @@ namespace SARLib.SARPlanner
         //modificare rendendo parametrico rispetto alla formula per il calcolo della utilità
         public double ComputeUtility(SARPoint point, SARPoint currentPos, SARGrid environment)
         {
+            if (currentPos.X == point.X && currentPos.Y == point.Y)
+            {
+                return 0;
+            }
             //Creazione set per i nodi considerati nella valutazione
             HashSet<SARPoint> evalNodes = new HashSet<SARPoint>();
 
@@ -147,20 +154,20 @@ namespace SARLib.SARPlanner
     #endregion
 
 
-    public interface ISARRoute
-    {
-        List<SARPoint> Route { get; set; }
-        //string SaveToFile(string destination);
-        //ISARPlan LoadFromFile(string source);
-    }
-    public class SARRoute : ISARRoute
-    {
-        public List<SARPoint> Route { get; set; }
-        public SARRoute(List<SARPoint> route)
-        {
-            Route = route;
-        }
-    }
+    //public interface ISARRoute
+    //{
+    //    List<SARPoint> Route { get; set; }
+    //    //string SaveToFile(string destination);
+    //    //ISARPlan LoadFromFile(string source);
+    //}
+    //public class SARRoute : ISARRoute
+    //{
+    //    public List<SARPoint> Route { get; set; }
+    //    public SARRoute(List<SARPoint> route)
+    //    {
+    //        Route = route;
+    //    }
+    //}
 
     
     ///Processo calcolo Route alla ricerca del target
@@ -185,10 +192,6 @@ namespace SARLib.SARPlanner
         public ICostFunction _costFunc;
         public IGoalSelectionStrategy _strategy;
 
-        //campi per creazione SARMission
-        public ISARRoute _route;
-        public List<SARPoint> _goals; //posizione dei target reali
-
         //costruttore
         public SARPlanner(SARGrid environment, SARPoint entryPoint, IUtilityFunction utilityFunc, ICostFunction costFunc, IGoalSelectionStrategy strategy)
         {
@@ -197,54 +200,71 @@ namespace SARLib.SARPlanner
             _utilityFunc = utilityFunc;
             _costFunc = costFunc;
             _strategy = strategy;
-
-            _route = null;
-            _goals = environment._estimatedTargetPositions;
+            
+            //_goals = environment._estimatedTargetPositions;
         }
+        
         //costanti per filtro Bayes
         const double FILTER_FALSENEG_RATIO = 0.2;
         const double FILTER_FALSEPOS_RATIO = 0.2;
-        EnvironmentUpdater EnvUpdater = new EnvironmentUpdater(FILTER_FALSENEG_RATIO, FILTER_FALSEPOS_RATIO); //filtro Bayes
+        
 
         public ISARMission GenerateMission()
-        {
-            //imposto punto di partenza
+        {            
+            //imposto punto critici
             var currentPos = _start;
+            var targetPos = _environment._realTarget;
 
-            //lettura sensoriale nel punto di partenza             
-            _environment = EnvUpdater.UpdateEnvironmentConfidence(_environment, currentPos);
+            //inizializzo moduli base
+            var selector = new GoalSelector(_environment, _utilityFunc, _strategy);
+            var planner = new RoutePlanner(_environment, _costFunc);
+            var runner = new PlanRunner();
+            var updater = new EnvironmentUpdater(FILTER_FALSENEG_RATIO, FILTER_FALSEPOS_RATIO);
+
+            //Parametri Log//
+            List<SARPoint> selectedGoals = new List<SARPoint>();//lista dei goals selezionati durante la ricerca
+            List<double> dangerLevelsHistory = new List<double>() { currentPos.Danger};//storico del livello di rischio rilevato durante la ricerca
+            ////
+
+            //inizializzazione prior di inizio
+            new BayesEngine.BayesFilter(0,0).NormalizeConfidence(_environment);                    
+            _environment = updater.UpdateEnvironmentConfidence(_environment, currentPos);
 
             //inizializzo missione
-            var mission = new SARMission.SARMission(_environment, new SARRoute(new List<SARPoint>()), currentPos);
-            mission.Route.Route.Add(currentPos); //aggiungo posizione iniziale            
+            var mission = new SARMission.SARMission(_environment, new List<SARPoint>(), currentPos);
+            mission.Route.Add(currentPos); //aggiungo posizione iniziale    
+            
+            
 
             //ciclo generazione 
-            while ((currentPos.X != _goals.First().X) && (currentPos.Y != _goals.First().Y))
+            while ((currentPos.X != targetPos.X) && (currentPos.Y != targetPos.Y))
             {
-                //seleziono candidato goal
-                var selector = new GoalSelector(_environment, _utilityFunc, _strategy);
+                //SELEZIONE GOAL
+                //var selector = new GoalSelector(_environment, _utilityFunc, _strategy);
                 var currentGoal = selector.SelectGoal(currentPos);
+                selectedGoals.Add(currentGoal); //LOG
 
-                //pianifico percorso
-                var planner = new RoutePlanner(_environment, _costFunc);
+                //PIANIFICAZIONE PERCORSO
+                //var planner = new RoutePlanner(_environment, _costFunc);
                 var currentPlan = planner.ComputeRoute(currentPos, currentGoal);
 
                 //controllo che sia stato trovato un percorso
-                if (currentPlan.Route.Count == 0)
+                if (currentPlan.Count == 0)
                 {
                     return mission;
                 }
 
-                //eseguo il piano
-                var runner = new PlanRunner();
+                //ESECUZIONE STEP PERCORSO
+                //var runner = new PlanRunner();
                 currentPos = runner.ExecutePlan(currentPlan);
+                dangerLevelsHistory.Add(currentPos.Danger); //LOG
 
-                //aggiorno piano missione
-                mission.Route.Route.Add(currentPos);
+                //AGGIORNAMENTO ROUTE MISSIONE
+                mission.Route.Add(currentPos);
 
-                //aggiorno ambiente                
+                //AGGIORNAMENTO PRIOR AMBIENTE             
                 //var updater = new EnvironmentUpdater(FILTER_FALSENEG_RATIO, FILTER_FALSEPOS_RATIO);
-                _environment = EnvUpdater.UpdateEnvironmentConfidence(_environment, currentPos);                
+                _environment = updater.UpdateEnvironmentConfidence(_environment, currentPos);                
             }
 
             return mission;
@@ -300,27 +320,28 @@ namespace SARLib.SARPlanner
     /// Generatore per il percorso ottimo fino al goal
     /// </summary>
     public class RoutePlanner
-    {
-        ISARSearchAlgoritm _algoritm;
+    {        
         SARGrid _env;
         ICostFunction _cost;
-        decimal _dangerThreshold;     
-                
-        public RoutePlanner(SARGrid environment, ICostFunction costFunction)
-        {
-            _env = environment;
-            _cost = costFunction;
-        }        
+        decimal _dangerThreshold = 1;
+        ISARSearchAlgoritm _algoritm;
 
-        public RoutePlanner(ISARSearchAlgoritm searchAlgoritm, SARGrid environment, ICostFunction costFunction, decimal dangerThreshold = 1)
-        {
-            _algoritm = searchAlgoritm;
+        //public RoutePlanner(SARGrid environment, ICostFunction costFunction)
+        //{
+        //    _env = environment;
+        //    _cost = costFunction;
+        //    _algoritm = new AStar(_env, _cost, _dangerThreshold);
+        //}
+
+        public RoutePlanner(SARGrid environment, ICostFunction costFunction, decimal dangerThreshold = 1)
+        {            
             _env = environment;
             _cost = costFunction;
             _dangerThreshold = dangerThreshold;
+            _algoritm = new AStar(_env, _cost, _dangerThreshold);
         }
 
-        public SARRoute ComputeRoute(SARPoint currentPosition, SARPoint goalPosition)
+        public List<SARPoint> ComputeRoute(SARPoint currentPosition, SARPoint goalPosition)
         {
             //inizializzo modulo ricerca percorso
             ISARPathFinder pathFinder = new PathFinder(_algoritm, _env, _cost, _dangerThreshold);
@@ -331,7 +352,7 @@ namespace SARLib.SARPlanner
             //applicazione di A*
             route = pathFinder.FindRoute(currentPosition, goalPosition);
 
-            return new SARRoute(route);
+            return route;
         }        
     }
 
@@ -345,9 +366,9 @@ namespace SARLib.SARPlanner
         /// </summary>
         /// <param name="route"></param>
         /// <returns></returns>
-        public SARPoint ExecutePlan(ISARRoute route)
+        public SARPoint ExecutePlan(List<SARPoint> route)
         {
-            var position = route.Route[1]; //prendo la posizione [1] poichè [0] è la posizione corrente
+            var position = route[1]; //prendo la posizione [1] poichè [0] è la posizione corrente
 
             return position;
         }        

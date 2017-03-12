@@ -184,8 +184,8 @@ namespace SARLib.SAREnvironment
             _grid = grid._grid;
             _numCol = grid._numCol;
             _numRow = grid._numRow;
-            _estimatedTargetPositions = grid._estimatedTargetPositions;
-            _realTarget = RandomizeTargetPosition();
+            _estimatedTargetPositions = GetPossibleTargetPositions();
+            _realTarget = grid._realTarget;
         }
         #endregion
 
@@ -275,7 +275,23 @@ namespace SARLib.SAREnvironment
         IPoint IGrid.GetPoint(int x, int y)
         {
             return GetPoint(x, y);
-        }              
+        }
+
+        public List<SARPoint> GetPossibleTargetPositions()
+        {
+            List<SARPoint> list = new List<SARPoint>();
+
+            //scansiono la griglia base
+            foreach (var p in _grid)
+            {
+                if (p.Type != SARPoint.PointTypes.Obstacle && p.Confidence > 0)
+                {
+                    list.Add(p);
+                }
+            }
+
+            return list;
+        }
 
         #region Generazione casuale
         public void RandomizeGrid(int seed, int shuffles)
@@ -360,7 +376,13 @@ namespace SARLib.SAREnvironment
         public SARPoint RandomizeTargetPosition(int targetNum = 1)
         {
             //accedo alla lista delle possibili posizioni candidate
-            var maybeTargetPos = _estimatedTargetPositions;            
+            var maybeTargetPos = GetPossibleTargetPositions();
+            if (maybeTargetPos.Count == 0)
+            {
+                var tgt = _grid[_numCol - 1, _numRow - 1];
+                tgt.Type = SARPoint.PointTypes.Target;
+                return tgt;
+            }
 
             //calcolo Nmax
             int Nmax = (int) maybeTargetPos.Sum(x => { return (x.Confidence * 10); });
@@ -375,7 +397,7 @@ namespace SARLib.SAREnvironment
                 }
             }
             //debug
-            extPool.ForEach(x => { Debug.WriteLine($"({x.X},{x.Y})"); });
+            //extPool.ForEach(x => { Debug.WriteLine($"({x.X},{x.Y})"); });
 
             //estrattore
             var cryptoGen = RandomNumberGenerator.Create();
@@ -388,10 +410,10 @@ namespace SARLib.SAREnvironment
             var index = rnd.Next(Nmax);
 
             //seleziono target
-            var targetPos = extPool[index];
-
-            return targetPos;
-        }
+            var target = extPool[index];
+            target.Type = SARPoint.PointTypes.Target;
+            return target;
+        }        
         #endregion
 
         #region IO

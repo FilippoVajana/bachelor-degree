@@ -12,7 +12,7 @@ namespace SARLibUnitTest
     [TestClass]
     public class PlannerUT
     {
-        const string GRID1_FILE_PATH = @"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest\Output\Data\ENVIRONMENTS\R10-C10-T4.json";
+        const string GRID1_FILE_PATH = @"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\GridPlannerUnitTest\Data\Environments\S-T4.json";
         
         const int GRID_ROWS = 5;
         const int GRID_COLUMNS = 8;
@@ -71,17 +71,21 @@ namespace SARLibUnitTest
             var utilityFun = new SARUtilityFunction(UTILITY_RADIUS, UTILITY_DNG_EXP, UTILITY_CONF_EXP);
 
             var pCurr = GRID.GetPoint(0, 0);
-            var p1 = GRID.GetPoint(9, 9);
+            var p1 = GRID.GetPoint(7, 4);
             var utilityValue1 = utilityFun.ComputeUtility(p1, pCurr, GRID);
-            Assert.AreEqual(0.142.ToString("N3"), utilityValue1.ToString("N3"));
+            Assert.AreEqual(0.111.ToString("N3"), utilityValue1.ToString("N3"));
 
             var p2 = GRID.GetPoint(0, 9);
             var utilityValue2 = utilityFun.ComputeUtility(p2, pCurr, GRID);
-            Assert.AreEqual(0.142.ToString("N3"), utilityValue2.ToString("N3"));
+            Assert.AreEqual(0.202.ToString("N3"), utilityValue2.ToString("N3"));
 
             var p3 = GRID.GetPoint(0, 2);
             var utilityValue3 = utilityFun.ComputeUtility(p3, pCurr, GRID);
-            Assert.AreEqual(0.191.ToString("N3"), utilityValue3.ToString("N3"));
+            Assert.AreEqual(0.158.ToString("N3"), utilityValue3.ToString("N3"));
+
+            //Debug
+            //var confStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence) + "\n\n" +
+            //    VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Danger);
         }
 
         [TestMethod]
@@ -153,9 +157,10 @@ namespace SARLibUnitTest
         [TestMethod]
         public void RoutePlanner()
         {
-            //PERCORSO 1
+            //PERCORSO 1 - Soglia massima
+
             var costFunc = new SARCostFunction();
-            var planner = new RoutePlanner(GRID, costFunc, (decimal) 0.1);
+            var planner = new RoutePlanner(GRID, costFunc);
 
             //pianifico percorso
             var startPos = GRID.GetPoint(0, 0);
@@ -166,14 +171,14 @@ namespace SARLibUnitTest
             var gridStr = VIEWER.DisplayEnvironment(GRID);
             var routeStr = VIEWER.DisplayRoute(GRID, route);
 
-            Assert.AreEqual(8, route.Route.Count); //lunghezza percorso
+            Assert.AreEqual(8, route.Count); //lunghezza percorso
 
             //////////////////////////////////////////////////////////
 
-            //PERCORSO 2
-            //GRID = GetRndGrid();
-            costFunc = new SARCostFunction();
-            planner = new RoutePlanner(GRID, costFunc, (decimal)0.1);
+            //PERCORSO 2 - Pericolo Alto
+            
+            //costFunc = new SARCostFunction();
+            planner = new RoutePlanner(GRID, costFunc, (decimal)0.8);
 
             //pianifico percorso
             startPos = GRID.GetPoint(0, 0);
@@ -185,18 +190,18 @@ namespace SARLibUnitTest
             routeStr = VIEWER.DisplayRoute(GRID, route);
             //hash = SARViewer.GetHashString(GRID);
 
-            Assert.AreEqual(22, route.Route.Count); //lunghezza percorso
+            Assert.AreEqual(0, route.Count); //lunghezza percorso
 
             //////////////////////////////////////////////////////////
 
-            //PERCORSO 3 --PROBLEMA CON SOGLIA PERICOLO ADATTIVA
-            GRID = GetRndGrid(GRID_SEED_2);            
-            costFunc = new SARCostFunction();
-            planner = new RoutePlanner(GRID, costFunc, (decimal) 0.1);
+            //PERCORSO 3 - Valutazione pericolo per ordinamento frontiera 
+            GRID = new SARGrid(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\GridPlannerUnitTest\Data\Environments\S-T4_danger_cost.json");         
+            //costFunc = new SARCostFunction();
+            planner = new RoutePlanner(GRID, costFunc, (decimal) 1);
 
             //pianifico percorso
-            startPos = GRID.GetPoint(1, 0);
-            goalPos = GRID.GetPoint(7, 4);
+            startPos = GRID.GetPoint(0, 0);
+            goalPos = GRID.GetPoint(4, 9);
             route = planner.ComputeRoute(startPos, goalPos);
 
             //visualizzazione grafica
@@ -204,7 +209,7 @@ namespace SARLibUnitTest
             routeStr = VIEWER.DisplayRoute(GRID, route);
             var hash = SARViewer.GetHashString(GRID);
 
-            //Assert.AreEqual(11, route.Route.Count); //lunghezza percorso
+            Assert.AreEqual(32, route.Count); //lunghezza percorso
 
             //////////////////////////////////////////////////////////
             
@@ -219,8 +224,8 @@ namespace SARLibUnitTest
             var runner = new PlanRunner();
 
             //pianifico percorso
-            var startPos = GRID.GetPoint(0, 2);
-            var goalPos = GRID.GetPoint(4, 3);
+            var startPos = GRID.GetPoint(0, 0);
+            var goalPos = GRID.GetPoint(0, 2);
             var route = planner.ComputeRoute(startPos, goalPos);
             var nextPos = runner.ExecutePlan(route);
 
@@ -228,7 +233,7 @@ namespace SARLibUnitTest
             var gridStr = VIEWER.DisplayEnvironment(GRID);
             var routeStr = VIEWER.DisplayRoute(GRID, route);
 
-            Assert.AreEqual(GRID.GetPoint(0, 3), nextPos);
+            Assert.AreEqual(GRID.GetPoint(1, 0), nextPos);
         }
 
         [TestMethod]
@@ -238,12 +243,19 @@ namespace SARLibUnitTest
             var utilityFunc = new SARUtilityFunction(UTILITY_RADIUS, UTILITY_DNG_EXP, UTILITY_CONF_EXP);
             var goalStrat = new SARGoalSelector();
 
-            var entryP = GRID.GetPoint(0, 2);
+            //carico ambiente custom
+            GRID = new SARGrid(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\GridPlannerUnitTest\Data\Environments\S-T1_mission-planner.json");
+            var entryP = GRID.GetPoint(0, 0);
+            GRID._realTarget = GRID.GetPoint(9, 9); //forzo la posizione del target
+
             //inizializzo pianificatore
             var planner = new SARPlanner(GRID, entryP, utilityFunc, costFunc, goalStrat);
 
             //pianifico missione
             var mission = planner.GenerateMission();
+
+            var mRoute = mission.Route;
+            var mGoals = mission.Goals;
         }
 
         [TestMethod]
@@ -252,7 +264,7 @@ namespace SARLibUnitTest
             //PERCORSO 1
             //var searchAlgoritm = new AStar();
             var costFunc = new SARCostFunction();
-            decimal dangerThreshold = (decimal) 0.2;
+            decimal dangerThreshold = (decimal) 1;
             
             var planner = new RoutePlanner(GRID, costFunc, dangerThreshold);
             
@@ -272,7 +284,7 @@ namespace SARLibUnitTest
             //    dangerThresholdLogCsv += $"{l.ToString()};{Environment.NewLine}";
             //}
             
-            Assert.AreEqual(10, route.Route.Count); //lunghezza percorso
+            Assert.AreEqual(10, route.Count); //lunghezza percorso
         }
     }
 }

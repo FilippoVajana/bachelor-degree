@@ -157,9 +157,9 @@ namespace SARLibUnitTest
         [TestMethod]
         public void TargetPositionRandomization()
         {
-            var testEnvPath = @"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest\Output\Data\ENVIRONMENTS";
-            var testFileName = @"R10_C10_T5.json";
-            var GRID = new SARGrid(Path.Combine(testEnvPath, testFileName));
+            var testEnvPath = @"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\GridPlannerUnitTest\Data\Environments\S-T4.json";
+            
+            var GRID = new SARGrid(testEnvPath);
             var extractions = 100;
             var pickedTgtList = new List<SARPoint>(extractions);
 
@@ -172,26 +172,26 @@ namespace SARLibUnitTest
             Assert.AreEqual(pickedTgtList.Capacity, extractions);
 
 #if DEBUG
-            #region Export Dati
-            //costruisco il file per l'analisi dei risultati
-            var resultFile = string.Empty;
+            //#region Export Dati
+            ////costruisco il file per l'analisi dei risultati
+            //var resultFile = string.Empty;
 
-            //aggiungo header file
-            foreach (var t in GRID._estimatedTargetPositions)
-            {
-                resultFile += $"#MT: ({t.X},{t.Y}) - C({t.Confidence}){Environment.NewLine}";
-            }
+            ////aggiungo header file
+            //foreach (var t in GRID._estimatedTargetPositions)
+            //{
+            //    resultFile += $"#MT: ({t.X},{t.Y}) - C({t.Confidence}){Environment.NewLine}";
+            //}
 
-            //aggiungo header dati
-            resultFile += $"Point";
+            ////aggiungo header dati
+            //resultFile += $"Point";
 
-            //aggiungo dati
-            foreach (var t in pickedTgtList)
-            {
-                resultFile += $"\n{t.X}{t.Y}";
-            }
-            File.WriteAllText(Path.Combine(testEnvPath, "extractions_result.csv"), resultFile);  
-            #endregion
+            ////aggiungo dati
+            //foreach (var t in pickedTgtList)
+            //{
+            //    resultFile += $"\n{t.X}{t.Y}";
+            //}
+            //File.WriteAllText(Path.Combine(testEnvPath, "extractions_result.csv"), resultFile);  
+            //#endregion
 #endif
         }        
     }

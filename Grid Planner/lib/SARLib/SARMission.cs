@@ -13,7 +13,7 @@ namespace SARLib.SARMission
 
         //Proprietà Missione SAR
         SARGrid Environment { get; set; }
-        SARRoute Route { get; set; }
+        List<SARPoint> Route { get; set; }
 
         SARPoint Start { get; set; }
         List<SARPoint> Goals { get; set; }
@@ -28,7 +28,7 @@ namespace SARLib.SARMission
     {
         #region Proprietà
         public SARGrid Environment { get; set; }
-        public SARRoute Route { get; set; }
+        public List<SARPoint> Route { get; set; }
         public SARPoint Start { get; set; }
         public List<SARPoint> Goals { get; set; }
         #endregion
@@ -42,7 +42,7 @@ namespace SARLib.SARMission
         /// <param name="env"></param>
         /// <param name="route"></param>
         /// <param name="start"></param>
-        public SARMission(SARGrid env, SARRoute route, SARPoint start)
+        public SARMission(SARGrid env, List<SARPoint> route, SARPoint start)
         {
             Environment = env;
             Route = route;

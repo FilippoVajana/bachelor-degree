@@ -18,7 +18,7 @@ namespace SARLibUnitTest
         ///
 
         #region COSTANTI
-        const string GRID_FILE_PATH = @"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\test\SARLibUnitTest\Output\Data\ENVIRONMENTS\R10-C10-T6-test_soglia_adattiva_danger.json";
+        const string GRID_FILE_PATH = @"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\GridPlannerUnitTest\Data\Environments\S-T4.json";
         const int GRID_ROWS = 5;
         const int GRID_COLUMNS = 8;
         const int GRID_SEED_1 = 10;
