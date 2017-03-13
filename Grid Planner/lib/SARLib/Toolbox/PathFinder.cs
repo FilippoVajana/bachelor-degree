@@ -176,7 +176,7 @@ namespace SARLib.Toolbox
             {
                 
                 //filtro soglia di pericolo
-                _openSet = FilterBorderDanger(_openSet);
+                //_openSet = FilterBorderDanger(_openSet);
 
                 //exit
                 if (_openSet.Count == 0)

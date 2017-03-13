@@ -123,7 +123,7 @@ namespace SARLib.SAREnvironment
     public interface IGrid
     {
         int Distance(IPoint p1, IPoint p2);
-        IPoint[] GetNeighbors(IPoint point);
+        SARPoint[] GetNeighbors(IPoint point);
         IPoint GetPoint(int x, int y);
         String SaveToFile(string destinationPath, string fileName = null);
     }
@@ -203,7 +203,7 @@ namespace SARLib.SAREnvironment
             throw new IndexOutOfRangeException("Invalid Points");
         }
 
-        public IPoint[] GetNeighbors(IPoint p)
+        public SARPoint[] GetNeighbors(IPoint p)
         {
             if (IsValidPoint(p))
             {
@@ -216,7 +216,7 @@ namespace SARLib.SAREnvironment
                 };
                 return neighbors.FindAll(x => x != null && x.Type != SARPoint.PointTypes.Obstacle).ToArray();
             }
-            return Array.Empty<IPoint>();
+            return Array.Empty<SARPoint>();
         }
 
         public SARPoint BuildSARPoint(int x, int y, double confidence, double danger, SARPoint.PointTypes type)
@@ -234,7 +234,7 @@ namespace SARLib.SAREnvironment
                 case SARPoint.PointTypes.Target:
                     break;
                 case SARPoint.PointTypes.Clear:
-                    point.Confidence = 0;
+                    //point.Confidence = 0;
                     break;
                 default:
                     break;
@@ -340,7 +340,7 @@ namespace SARLib.SAREnvironment
                 targets[i] = _tmpTarget;
             }
             //PROBE
-            Debug.WriteLine(new SARViewer().DisplayEnvironment(this));
+            //Debug.WriteLine(new SARViewer().DisplayEnvironment(this));
 
             //propago la confidence
             foreach (var t in targets)
@@ -365,7 +365,7 @@ namespace SARLib.SAREnvironment
                 }
             }
             //PROBE
-            Debug.WriteLine(new SARViewer().DisplayEnvironment(this));
+            //Debug.WriteLine(new SARViewer().DisplayEnvironment(this));
         } 
 
         /// <summary>

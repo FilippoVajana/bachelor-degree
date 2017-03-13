@@ -7,6 +7,8 @@ using System.Text;
 using SARLib.SAREnvironment;
 using SARLib.SARMission;
 using SARLib.Toolbox;
+using System.Diagnostics;
+using System.Threading;
 
 namespace SARLib.SARPlanner
 {
@@ -67,50 +69,41 @@ namespace SARLib.SARPlanner
             _dExp = dangerExp;
             _cExp = confidenceExp;
         }
+        
+        Func<SARGrid, SARPoint, int, HashSet<SARPoint>> get_points_in_area = delegate (SARGrid env, SARPoint center, int radius)
+        {
+            var points = new HashSet<SARPoint> { center };
+            
+            while (radius > 0)
+            {
+                var border = new List<SARPoint>();
+                foreach (var p in points)
+                {                    
+                    border.AddRange(env.GetNeighbors(p));
+                }
 
+                border.ForEach(x => points.Add(x));
+                radius--;
+            }
+
+            return points;
+        };
+        
         //modificare rendendo parametrico rispetto alla formula per il calcolo della utilità
         public double ComputeUtility(SARPoint point, SARPoint currentPos, SARGrid environment)
         {
-            if (currentPos.X == point.X && currentPos.Y == point.Y)
+            if (currentPos.X == point.X && currentPos.Y == point.Y || point.Type == SARPoint.PointTypes.Obstacle)
             {
                 return 0;
             }
+
             //Creazione set per i nodi considerati nella valutazione
-            HashSet<SARPoint> evalNodes = new HashSet<SARPoint>();
-
-            double utility = 0;
-
-            //scansione l'area circostante
-            var nodeToScan = new HashSet<SARPoint>() { point }; //nodi da espandere
-            var nodeScanned = new HashSet<SARPoint>();
-            while (nodeToScan.Count > 0)
-            {
-                var n = nodeToScan.First();
-                nodeToScan.Remove(n);
-                nodeScanned.Add(n);
-
-                //ottengo nodi limitrofi
-                var neighbors = environment.GetNeighbors(n);
-
-                //aggiorno set di nodi da valutare
-                foreach (var near in neighbors)
-                {
-                    if (environment.Distance(near, point) <= _radius) //limito espansione della frontiera
-                    {
-                        evalNodes.Add(near as SARPoint);
-                        if (!nodeScanned.Contains(near))
-                            nodeToScan.Add(near as SARPoint);
-                    }
-                }
-
-                //decremento contatore
-                //_radius--;
-            }
-
+            HashSet<SARPoint> evalNodes = get_points_in_area(environment, point, _radius);
+            
             //calcolo parametri funzione di utilità
             double DR = 0;
             double CR = 0;
-            int Area = evalNodes.Count;
+            int Area = (int) Math.Sqrt(evalNodes.Count);
             double L = manhattan_distance(currentPos, point);
 
             foreach (var node in evalNodes)
@@ -122,9 +115,25 @@ namespace SARLib.SARPlanner
             DR = DR / Area;
             CR = Math.Pow(CR / Area, _cExp);
 
-            utility = CR * (Math.Pow(1 + 1/(L * DR), _dExp));
+            //double utility = 0;
+            double utility = CR * (Math.Pow(1 + 1/(L * DR), _dExp));
 
-            return (!double.IsNaN(utility))? utility : 0;
+            //Debug
+            if ((point.X == 11 || point.X == 10) && point.Y > 22 && currentPos.Y > 22)
+            {
+                var str = string.Empty;
+            }
+
+            //Controllo valore di ritorno
+            if (double.IsInfinity(utility) || double.IsNaN(utility))
+            {
+                return 0;
+            }
+            else
+            {
+                return utility;
+            }
+            //return (!double.IsNaN(utility))? utility : 0;
         }
     }
 
@@ -146,8 +155,15 @@ namespace SARLib.SARPlanner
         //seleziono la cella con valore di utilità massimo
         public SARPoint SelectNextTarget(Dictionary<SARPoint, double> utilityMap)
         {
-            var orderedMap = utilityMap.OrderByDescending(e => e.Value);
-            return orderedMap.First(e => e.Value != double.NaN).Key;
+            var maxUtil = utilityMap.Max(x => x.Value);
+            var maxPool = utilityMap.Where(x => x.Value == maxUtil);
+
+            var maxPoint = maxPool.OrderByDescending(x => x.Key.Confidence);
+
+            return maxPoint.First().Key;
+
+            //var orderedMap = utilityMap.OrderByDescending(e => e.Value);
+            //return orderedMap.First(e => e.Value != double.NaN).Key;
         }
     }
 
@@ -180,7 +196,7 @@ namespace SARLib.SARPlanner
     //Pianificatore
     public interface ISARMissionPlanner
     {
-        ISARMission GenerateMission();
+        ISARMission GenerateMission(object cancToken);
     }
 
     public class SARPlanner : ISARMissionPlanner
@@ -188,15 +204,19 @@ namespace SARLib.SARPlanner
         //campi per setup pianificatore        
         public SARGrid _environment;
         public SARPoint _start;
+        public decimal _dangerThreshold;
         public IUtilityFunction _utilityFunc;
         public ICostFunction _costFunc;
         public IGoalSelectionStrategy _strategy;
+        //LOGGER
+        SimulationLogger LOGGER;
 
         //costruttore
-        public SARPlanner(SARGrid environment, SARPoint entryPoint, IUtilityFunction utilityFunc, ICostFunction costFunc, IGoalSelectionStrategy strategy)
+        public SARPlanner(SARGrid environment, SARPoint entryPoint, decimal dangerThreshold ,IUtilityFunction utilityFunc, ICostFunction costFunc, IGoalSelectionStrategy strategy)
         {
             _environment = environment;
             _start = entryPoint;
+            _dangerThreshold = dangerThreshold;
             _utilityFunc = utilityFunc;
             _costFunc = costFunc;
             _strategy = strategy;
@@ -208,23 +228,46 @@ namespace SARLib.SARPlanner
         const double FILTER_FALSENEG_RATIO = 0.2;
         const double FILTER_FALSEPOS_RATIO = 0.2;
         
+        public SimulationLogger SetupLogger(string instanceId, int instanceMID, string logDir, bool verbose)
+        {
+            LOGGER = new SimulationLogger(instanceId, instanceMID, _environment, logDir, verbose);
+            return LOGGER;
+        }
 
-        public ISARMission GenerateMission()
-        {            
+        public ISARMission GenerateMission(object cancToken)
+        {
+            //token cancellazione simulazione
+            var cancellationToken = (CancellationToken)cancToken;
+
+            //LOG
+            LOGGER?.LogMissionStart();
+            //
+
             //imposto punto critici
             var currentPos = _start;
             var targetPos = _environment._realTarget;
+            //LOG
+            LOGGER?.LogPosition(currentPos);
+            LOGGER?.LogDanger((decimal)currentPos.Danger);
+            LOGGER?.LogPosterior(_environment);
+            //
 
             //inizializzo moduli base
             var selector = new GoalSelector(_environment, _utilityFunc, _strategy);
-            var planner = new RoutePlanner(_environment, _costFunc);
+            var planner = new RoutePlanner(_environment, _costFunc, _dangerThreshold);
             var runner = new PlanRunner();
             var updater = new EnvironmentUpdater(FILTER_FALSENEG_RATIO, FILTER_FALSEPOS_RATIO);
+            
 
-            //Parametri Log//
-            List<SARPoint> selectedGoals = new List<SARPoint>();//lista dei goals selezionati durante la ricerca
-            List<double> dangerLevelsHistory = new List<double>() { currentPos.Danger};//storico del livello di rischio rilevato durante la ricerca
-            ////
+            //preprocessing dell'ambiente - elimino posizioni pericolose
+            foreach (var p in _environment._grid)
+            {
+                if ((decimal)p.Danger > _dangerThreshold)
+                    p.Type = SARPoint.PointTypes.Obstacle;
+            }
+            //Debug
+            //var gridStr = new SARViewer().DisplayEnvironment(_environment);
+
 
             //inizializzazione prior di inizio
             new BayesEngine.BayesFilter(0,0).NormalizeConfidence(_environment);                    
@@ -233,40 +276,77 @@ namespace SARLib.SARPlanner
             //inizializzo missione
             var mission = new SARMission.SARMission(_environment, new List<SARPoint>(), currentPos);
             mission.Route.Add(currentPos); //aggiungo posizione iniziale    
-            
-            
+
+            //inizializzo goal 
+            var currentGoal = selector.SelectGoal(currentPos);
 
             //ciclo generazione 
-            while ((currentPos.X != targetPos.X) && (currentPos.Y != targetPos.Y))
+            while (cancellationToken.IsCancellationRequested == false)
             {
-                //SELEZIONE GOAL
-                //var selector = new GoalSelector(_environment, _utilityFunc, _strategy);
-                var currentGoal = selector.SelectGoal(currentPos);
-                selectedGoals.Add(currentGoal); //LOG
+                //VERIFICA RAGGIUNGIMENTO TARGET
+                if ((currentPos.X == targetPos.X && currentPos.Y == targetPos.Y) && (currentGoal.X == targetPos.X && currentGoal.Y == targetPos.Y))
+                {
+                    break;
+                }              
+                
+                //SELEZIONE GOAL                
+                currentGoal = selector.SelectGoal(currentPos);
+                mission.Goals.Add(currentGoal);
+                //LOG  
+                LOGGER?.LogGoal(currentGoal);
+                //selectedGoals.Add(currentGoal);               
 
-                //PIANIFICAZIONE PERCORSO
-                //var planner = new RoutePlanner(_environment, _costFunc);
+                //Debug
+                //if (currentPos.X == targetPos.X && currentPos.Y == targetPos.Y)
+                //{
+                //    int a = 0;
+                //}
+
+
+                //PIANIFICAZIONE PERCORSO                
                 var currentPlan = planner.ComputeRoute(currentPos, currentGoal);
-
+                
                 //controllo che sia stato trovato un percorso
                 if (currentPlan.Count == 0)
                 {
+                    //LOG
+                    LOGGER?.LogMissionEnd();
+                    LOGGER?.LogMissionResult(mission);
+                    //
                     return mission;
                 }
+                //Debug
+                Debug.WriteLine($"PLAN: ({currentPlan.First().X},{currentPlan.First().Y})-({currentPlan.Last().X},{currentPlan.Last().Y})");
 
-                //ESECUZIONE STEP PERCORSO
-                //var runner = new PlanRunner();
+                //ESECUZIONE STEP PERCORSO                
                 currentPos = runner.ExecutePlan(currentPlan);
-                dangerLevelsHistory.Add(currentPos.Danger); //LOG
+                //LOG
+                LOGGER?.LogPosition(currentPos);
+                LOGGER?.LogDanger((decimal) currentPos.Danger);
+                //
+                //dangerLevelsHistory.Add(currentPos.Danger); 
 
                 //AGGIORNAMENTO ROUTE MISSIONE
                 mission.Route.Add(currentPos);
 
-                //AGGIORNAMENTO PRIOR AMBIENTE             
-                //var updater = new EnvironmentUpdater(FILTER_FALSENEG_RATIO, FILTER_FALSEPOS_RATIO);
-                _environment = updater.UpdateEnvironmentConfidence(_environment, currentPos);                
+                //AGGIORNAMENTO PRIOR AMBIENTE
+                _environment = updater.UpdateEnvironmentConfidence(_environment, currentPos);
+                //LOG
+                LOGGER?.LogPosterior(_environment);
             }
 
+            //LOG
+            LOGGER?.LogMissionEnd();
+            LOGGER?.LogMissionResult(mission);
+            if(cancellationToken.IsCancellationRequested == true)
+            {
+                //Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"[{DateTime.Now.ToUniversalTime()}] {LOGGER?.instanceID} TIMEOUT");
+                //Console.ForegroundColor = ConsoleColor.Gray;
+                LOGGER?.LogMissionTimeout();
+            }
+            
+            //
             return mission;
         }
         
@@ -298,6 +378,15 @@ namespace SARLib.SARPlanner
             //seleziono il punto con utilità massima
             var goal = _strategy.SelectNextTarget(_utilMap);
 
+            //debug
+            if ((currentPos.X == 11 || currentPos.X == 10) && (currentPos.Y > 20 && currentPos.Y < 25))
+            {
+                var debugStr = new SARViewer().DisplayFastDebugInfo(_env);
+                debugStr = $"{debugStr}\n\n" +
+                    $"U:\n{new SARViewer().DisplayMap(_env, _utilMap)}";             
+            }
+            
+
             return goal;
         }
 
@@ -305,11 +394,11 @@ namespace SARLib.SARPlanner
         {
             Dictionary<SARPoint, double> map = new Dictionary<SARPoint, double>(_env._grid.Length);
 
-            //calcolo valore di utilità delle celle
+            //calcolo valore di utilità delle celle            
             foreach (var point in _env._grid)
-            {
+            {                
                 var pUtility = _util.ComputeUtility(point, currentPos, _env);
-                map.Add(point, pUtility);
+                map.Add(point, pUtility);                           
             }
 
             return map;

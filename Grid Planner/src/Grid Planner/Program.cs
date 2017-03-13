@@ -14,54 +14,35 @@ namespace GridPlanner
         {
             //APP DIRECTORIES 
             string APP_DATA_ROOT = Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "Data")).FullName;
-            string APP_ENVS_ROOT = Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "Data", "Environments")).FullName;
+            string APP_ENVS_ROOT = Directory.CreateDirectory(Path.Combine(APP_DATA_ROOT, "Environments")).FullName;
+            //string APP_LOGS_ROOT = Directory.CreateDirectory(Path.Combine(APP_DATA_ROOT, "Logs")).FullName;
+            string APP_LOGS_ROOT = @"C:\Users\filip\Desktop\Grid Planner\Data\Logs";
 
+            //creo directories
+            Directory.CreateDirectory(APP_DATA_ROOT);
+            Directory.CreateDirectory(APP_ENVS_ROOT);
+            Directory.CreateDirectory(APP_LOGS_ROOT);
+
+            //input molteplicità
+            Console.WriteLine("INSERT MULTEPLICITY:" + Environment.NewLine);
+            var mult = Console.ReadLine();
+
+            //input verbose
+            bool verbose = false;
+            Console.WriteLine($"VERBOSE MODE? [y/n]");
+            var v = Console.ReadLine();
+            if (v == "y")
+            {
+                verbose = true;
+            }
+            
             //SIMULATOR
-            SARSimulator.MissionSimulator SIMULATOR = new SARSimulator.MissionSimulator(APP_ENVS_ROOT);
-
-
-            //PROVA CREAZIONE/CANCELLAZIONE TASK
-
-            ////sorgente segnale timeout simulazione
-            //CancellationTokenSource cancTokenSource = new CancellationTokenSource(4000);
-            //List<Task> taskPool = new List<Task>(4);
-
-            ////creazione pool
-            //for (int i = 0; i < 4; i++)
-            //{
-            //    taskPool.Add(new Task(() => { SimulateWorkload(cancTokenSource.Token); }));
-            //}
-
-            ////avvio dei task
-            //foreach (var t in taskPool)
-            //{
-            //    t.Start();
-            //}
-
-            //Task.WaitAll(taskPool.ToArray());
+            SARSimulator.MissionSimulator SIMULATOR = new SARSimulator.MissionSimulator(APP_ENVS_ROOT, int.Parse(mult), APP_LOGS_ROOT, verbose);
+            
 
             Console.Write("\nPress Enter to exit");
             Console.ReadKey();
         }
-
-        private static void SimulateWorkload(CancellationToken cancToken)
-        {
-            while (true)
-            {
-                if (cancToken.IsCancellationRequested == false)
-                {
-                    Console.WriteLine($"{DateTime.Now}\t" +
-                        $"ThreadId: {Thread.CurrentThread.ManagedThreadId}");
-                    Thread.Sleep(100);
-                }
-                else
-                {
-                    Console.WriteLine($"{DateTime.Now}\t" +
-                        $"ThreadId: {Thread.CurrentThread.ManagedThreadId}\t" +
-                        $"Cancellation Request");
-                    return;
-                }
-            }
-        }
+        
     }
 }

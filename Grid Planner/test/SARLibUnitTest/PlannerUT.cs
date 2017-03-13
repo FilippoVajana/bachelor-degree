@@ -6,6 +6,7 @@ using SARLib.SAREnvironment;
 using SARLib.SARPlanner;
 using System.Diagnostics;
 using SARLib.Toolbox;
+using System.Threading;
 
 namespace SARLibUnitTest
 {
@@ -237,24 +238,77 @@ namespace SARLibUnitTest
         }
 
         [TestMethod]
-        public void MissionPlanner()
+        public void MissionPlanner_Small()
         {
+            var u_radius = 2;
+            var u_conf = 0.8;
+            var u_dang = 1 - u_conf;
+
             var costFunc = new SARCostFunction();
-            var utilityFunc = new SARUtilityFunction(UTILITY_RADIUS, UTILITY_DNG_EXP, UTILITY_CONF_EXP);
+            var utilityFunc = new SARUtilityFunction(u_radius, UTILITY_DNG_EXP, UTILITY_CONF_EXP);
             var goalStrat = new SARGoalSelector();
+            var dangerThreshold = (decimal) 0.8;
 
             //carico ambiente custom
             GRID = new SARGrid(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\GridPlannerUnitTest\Data\Environments\S-T1_mission-planner.json");
             var entryP = GRID.GetPoint(0, 0);
             GRID._realTarget = GRID.GetPoint(9, 9); //forzo la posizione del target
 
+
+            //MISSIONE 1
+            
             //inizializzo pianificatore
-            var planner = new SARPlanner(GRID, entryP, utilityFunc, costFunc, goalStrat);
+            var planner = new SARPlanner(GRID, entryP, 1, utilityFunc, costFunc, goalStrat);
 
             //pianifico missione
-            var mission = planner.GenerateMission();
+            var mission = planner.GenerateMission(new CancellationToken());
 
-            var mRoute = mission.Route;
+            var mRoute = VIEWER.DisplayRoute(GRID, mission.Route);
+            var mGoals = mission.Goals;
+            Debug.WriteLine("\n\n\n");
+
+            //MISSIONE 2
+            GRID = new SARGrid(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\GridPlannerUnitTest\Data\Environments\S-T1_mission-planner.json");
+            entryP = GRID.GetPoint(0, 0);
+            GRID._realTarget = GRID.GetPoint(9, 9); //forzo la posizione del target
+
+            //inizializzo pianificatore
+            planner = new SARPlanner(GRID, entryP, dangerThreshold, utilityFunc, costFunc, goalStrat);
+
+            //pianifico missione
+            mission = planner.GenerateMission(new CancellationToken());
+
+            mRoute = VIEWER.DisplayRoute(GRID, mission.Route);
+            mGoals = mission.Goals;
+            
+        }
+        
+        [TestMethod]
+        public void MissionPlanner_Medium()
+        {
+            var u_radius = 1;
+            var u_conf = 0.8;
+            var u_dang = 1 - u_conf;
+
+            var costFunc = new SARCostFunction();
+            var utilityFunc = new SARUtilityFunction(u_radius, UTILITY_DNG_EXP, UTILITY_CONF_EXP);
+            var goalStrat = new SARGoalSelector();
+            var dangerThreshold = (decimal)0.7;
+            
+
+
+            //MISSIONE 1
+            GRID = new SARGrid(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\GridPlannerUnitTest\Data\Environments\M-T1_mission-planner.json");
+            var entryP = GRID.GetPoint(0, 0);
+            GRID._realTarget = GRID.GetPoint(11, 23); //forzo la posizione del target
+
+            //inizializzo pianificatore
+            var planner = new SARPlanner(GRID, entryP, dangerThreshold, utilityFunc, costFunc, goalStrat);
+
+            //pianifico missione
+            var mission = planner.GenerateMission(new CancellationToken());
+
+            var mRoute = VIEWER.DisplayRoute(GRID, mission.Route);
             var mGoals = mission.Goals;
         }
 

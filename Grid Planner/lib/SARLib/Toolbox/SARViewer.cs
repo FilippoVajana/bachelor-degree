@@ -33,6 +33,21 @@ namespace SARLib.SAREnvironment
         } 
         #endregion
 
+        public string DisplayFastDebugInfo(SARGrid env)
+        {
+            string str = $"AMB:\n" +
+                $"{DisplayEnvironment(env)}" +
+                $"\n\n" +
+                $"C:\n" +
+                $"{DisplayProperty(env, SARPointAttributes.Confidence)}" +
+                $"\n\n" +
+                $"D:\n" +
+                $"{DisplayProperty(env, SARPointAttributes.Danger)}" +
+                $"\n\n";
+            return str;
+        }
+
+
         //Visualizzazione topologia ambiente
         public string DisplayEnvironment(SARGrid environment)
         {
@@ -52,7 +67,7 @@ namespace SARLib.SAREnvironment
                     gridString += Environment.NewLine;
                 }
             }
-            Debug.WriteLine($"{_env.GetType().Name} ({_numCol} x {_numRow})");
+            //Debug.WriteLine($"{_env.GetType().Name} ({_numCol} x {_numRow})");
 
             return gridString;
         }
@@ -64,13 +79,13 @@ namespace SARLib.SAREnvironment
             switch (attribute)
             {
                 case SARPointAttributes.Confidence:
-                    Debug.WriteLine($"CONFIDENCE PROBABILITY DISTRIBUTION \n\n" +
-                        $"{PrintConfidence(_env)}");
+                    //Debug.WriteLine($"CONFIDENCE PROBABILITY DISTRIBUTION \n\n" +
+                    //    $"{PrintConfidence(_env)}");
                     return PrintConfidence(_env);
                     break;
                 case SARPointAttributes.Danger:
-                    Debug.WriteLine($"DANGER PROBABILITY DISTRIBUTION \n\n" +
-                        $"{PrintDanger(_env)}");
+                    //Debug.WriteLine($"DANGER PROBABILITY DISTRIBUTION \n\n" +
+                    //    $"{PrintDanger(_env)}");
                     return PrintDanger(_env);
                     break;
                 default:
@@ -133,7 +148,7 @@ namespace SARLib.SAREnvironment
                     gridString += Environment.NewLine;
                 }
             }
-            Debug.WriteLine($"{map.GetType().Name} ({_numCol} x {_numRow})");
+            //Debug.WriteLine($"{map.GetType().Name} ({_numCol} x {_numRow})");
 
             return gridString;
         }
@@ -163,7 +178,7 @@ namespace SARLib.SAREnvironment
                     gridRouteStr += Environment.NewLine;
                 }
             }
-            Debug.WriteLine($"{_env.GetType().Name} ({_numCol} x {_numRow})");
+            //Debug.WriteLine($"{_env.GetType().Name} ({_numCol} x {_numRow})");
 
             return $"BASE GRID:{Environment.NewLine}{Environment.NewLine}" +
                 $"{baseGridStr}{Environment.NewLine}{Environment.NewLine}" +

@@ -47,18 +47,8 @@ namespace SARLib.SARMission
             Environment = env;
             Route = route;
             Start = start;
-            Goals = env._estimatedTargetPositions;
-        }
-        //genera missione random
-        public SARMission(int envRow, int envCol, int numTargets)
-        {
-            Environment = new SARGrid(envCol, envRow);
-            Route = null;
-            Start = null;
-            Goals = new List<SARPoint>(numTargets);
-
-            RandomizeMission(numTargets);
-        }
+            Goals = new List<SARPoint>();
+        }        
         #endregion
 
         #region Load/Save
@@ -74,30 +64,30 @@ namespace SARLib.SARMission
         }
         #endregion
 
-        private void RandomizeMission(int numTargets)
-        {
-            //ambiente random
-            Environment.RandomizeGrid(10, Environment._numCol * Environment._numRow);
-            //piano di ricerca random
+        //private void RandomizeMission(int numTargets)
+        //{
+        //    //ambiente random
+        //    Environment.RandomizeGrid(10, Environment._numCol * Environment._numRow);
+        //    //piano di ricerca random
 
-            //punto di partenza random
+        //    //punto di partenza random
 
-            //obiettivi random
+        //    //obiettivi random
 
-        }
+        //}
 
-        private SARPoint PickRandomGridPoint(SARGrid grid, SARPoint.PointTypes type)
-        {
-            Random rnd = new Random(10);
-            SARPoint point = grid.GetPoint(rnd.Next(0, grid._numCol - 1), rnd.Next(grid._numRow - 1));
+        //private SARPoint PickRandomGridPoint(SARGrid grid, SARPoint.PointTypes type)
+        //{
+        //    Random rnd = new Random(10);
+        //    SARPoint point = grid.GetPoint(rnd.Next(0, grid._numCol - 1), rnd.Next(grid._numRow - 1));
 
-            while (point.Type != type)
-            {
-                point = grid.GetPoint(rnd.Next(0, grid._numCol - 1), rnd.Next(grid._numRow - 1));
-            }
+        //    while (point.Type != type)
+        //    {
+        //        point = grid.GetPoint(rnd.Next(0, grid._numCol - 1), rnd.Next(grid._numRow - 1));
+        //    }
 
-            return point;
-        }
+        //    return point;
+        //}
 
 
     }
