@@ -11,7 +11,7 @@ namespace GridPlanner
     public class Program
     {        
         public static void Main(string[] args)
-        {
+        {            
             //APP DIRECTORIES 
             string APP_DATA_ROOT = Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "Data")).FullName;
             string APP_ENVS_ROOT = Directory.CreateDirectory(Path.Combine(APP_DATA_ROOT, "Environments")).FullName;

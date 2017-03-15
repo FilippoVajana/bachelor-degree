@@ -24,8 +24,8 @@ namespace SARSimulator
         public static Dictionary<int, TimeSpan> SIM_MAX_DURATION =
             new Dictionary<int, TimeSpan>()
             {
-                {10, TimeSpan.FromSeconds(10) },
-                {25, TimeSpan.FromSeconds(60) },
+                {10, TimeSpan.FromSeconds(30) },
+                {25, TimeSpan.FromSeconds(180) },
                 {50, TimeSpan.FromSeconds(240) }
             };
 
@@ -106,6 +106,9 @@ namespace SARSimulator
                     $"THREADS: {THREAD_NUM}{Environment.NewLine}" +
                     $"TIME THRESHOLD: {tLimS}sec.[S]  {tLimM}sec.[M]  {tLimL}sec.[L] {Environment.NewLine}" +
                     $"MAX DURATION: {etaTot} sec. [{TimeSpan.FromSeconds(etaTot).TotalMinutes} min.]{Environment.NewLine}");
+                Console.WriteLine("Press Enter");
+                Console.ReadKey();
+
 
                 RunWorkingQueue();
 
@@ -122,11 +125,14 @@ namespace SARSimulator
             private void RunWorkingQueue()
             {
                 var _simStart = DateTime.Now;
+                var runningTask = new List<Task>();
+                //var runningTask = new Task[THREAD_NUM];
 
                 while (INSTANCE_QUEUE.Count > 0)
                 {
-                    var runningTask = new Task[THREAD_NUM];
-                    for (int i = 0; i < THREAD_NUM; i++)
+                    // var runningTask = new Task[THREAD_NUM];
+                    var rT = runningTask.Count;
+                    for (int i = 0; i < THREAD_NUM - rT; i++)
                     {                      
                         //creo task
                         var instance = INSTANCE_QUEUE.Dequeue();
@@ -134,19 +140,19 @@ namespace SARSimulator
                         var task = instance.RunInstanceAsync(SIM_MAX_DURATION[instance._env._numCol]);
 
                         //aggiungo alla coda di elaborazione
-                        runningTask[i] = task;                        
+                        //runningTask[i] = task;
+                        runningTask.Add(task);
+
+                        Thread.Sleep(100);
                     }
 
                     //attendo completamento tasks
-                    Task.WaitAll(runningTask);
-
-                    //runningTask.RemoveRange(0, runningTask.Count);
-
-                    //Console.ForegroundColor = ConsoleColor.Green;
-                    //Console.WriteLine("TASKS QUEUE: " + INSTANCE_QUEUE.Count);
-                    //Console.ForegroundColor = ConsoleColor.Gray;                   
-                    
+                    int index = Task.WaitAny(runningTask.ToArray());
+                    runningTask.RemoveAt(index);
+                    Console.WriteLine("INSTANCE_QUEUE: " + INSTANCE_QUEUE.Count);
                 }
+
+                Task.WaitAll(runningTask.ToArray());
 
                 var _simEnd = DateTime.Now;
                 Console.WriteLine($"SIMULATION DURATION: {_simEnd.Subtract(_simStart).TotalSeconds}");
@@ -213,10 +219,11 @@ namespace SARSimulator
             if (cT.IsCancellationRequested == false)
             {
                 Console.WriteLine($"[{DateTime.Now.ToUniversalTime()}] {this.ID} STOPPED"); 
-            }            
+            }
 
             //salvataggio logs
-            instanceLogger.SaveToFile();
+            //Task.Run(() => instanceLogger.SaveLogs());
+            instanceLogger.SaveLogs();
 
             cTS.Dispose();
 

@@ -35,7 +35,7 @@ namespace SARLibUnitTest
             VIEWER = new SARViewer();
             var gridStr = VIEWER.DisplayEnvironment(GRID);
         }
-
+        
         [TestMethod]
         public void GetValidPoint()
         {

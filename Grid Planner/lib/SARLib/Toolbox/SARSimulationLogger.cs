@@ -17,12 +17,14 @@ namespace SARLib.Toolbox
         SARGrid _env;
         SARMission.SARMission _missionResult;
 
-        //LOGS
+        //log temporali
         DateTime _startTime;
         DateTime _endTime;
 
         //verbose
-        List<double[,]> posteriorHist = new List<double[,]>();
+        //List<double[,]> posteriorHist = new List<double[,]>();
+        string posteriorHPath = string.Empty;
+        StreamWriter posteriorFile = null;
         List<SARPoint> positionHist = new List<SARPoint>();
         List<SARPoint> goalSelectedHist = new List<SARPoint>();
 
@@ -43,22 +45,35 @@ namespace SARLib.Toolbox
             _env = environment;
             _logDirectory = logDir;
             _verboseMode = verbose;
+
+            if(_verboseMode)
+            {
+                //cartella log            
+                var logFolder = Directory.CreateDirectory(Path.Combine(_logDirectory, instanceID, instanceMID.ToString()));
+
+                //header
+                var posteriorH = $"Rows{_env._numRow}, Cols{_env._numCol}, [Matlab] reshape(P,[{_env._numRow},{_env._numCol}]){Environment.NewLine}";
+
+                //file
+                posteriorHPath = Path.Combine(logFolder.FullName, "posteriorHistory.txt");
+                posteriorFile = File.CreateText(posteriorHPath);
+                posteriorFile.WriteLine(posteriorH);
+            }
         }
 
         #region Log parametri
         public void LogPosterior(SARGrid env)
-        {
-            var gridPost = new double[env._numCol, env._numRow];
-
-            for (int y = 0; y < env._numRow; y++)
+        {      
+            //salvataggio del file
+            if(_verboseMode)
             {
-                for (int x = 0; x < env._numCol; x++)
+                //posterior
+                foreach (var e in env._grid)
                 {
-                    gridPost[x, y] = env._grid[x, y].Confidence;
+                    posteriorFile.Write($"{e.Confidence.ToString("N3")} ");
                 }
+                posteriorFile.WriteLine();                
             }
-
-            posteriorHist.Add(gridPost);
         }
         public void LogPosition(SARPoint positionSnap)
         {
@@ -76,7 +91,7 @@ namespace SARLib.Toolbox
         public void LogMissionResult(SARMission.SARMission mission)
         {
             _missionResult = mission;
-            LogRunningResults();
+            ExtractRunResult();
         }
 
         public void LogMissionStart()
@@ -92,7 +107,7 @@ namespace SARLib.Toolbox
             timeout = true;
         }
 
-        private void LogRunningResults()
+        private void ExtractRunResult()
         {
             searchSteps = _missionResult.Route.Count;
             searchDuration = _endTime.Subtract(_startTime);
@@ -120,19 +135,20 @@ namespace SARLib.Toolbox
 
             double cov = (double)visited.Count / (double)envArea;
 
-            return cov;
+            return cov*100;
 
-        } 
+        }
         #endregion
 
-        public void SaveToFile()
+        public void SaveLogs()
         {
+            Console.WriteLine($"SAVING LOGS FOR INSTANCE {instanceID}({instanceMID})");
+
             //cartella log            
             var logFolder = Directory.CreateDirectory(Path.Combine(_logDirectory, instanceID, instanceMID.ToString()));
 
             //salvataggio files non verbose
-            CreateNonVerboseFiles(logFolder);
-            SaveNonVerbose(logFolder);
+            SaveNormalLogs(logFolder);
 
             //salvataggio files verbose
             if (_verboseMode)
@@ -140,96 +156,89 @@ namespace SARLib.Toolbox
                 SaveVerbose(logFolder);
             }
 
+            posteriorFile.Dispose();
+            Console.WriteLine($"SAVED LOGS FOR INSTANCE {instanceID}({instanceMID})");
+        }
+
+        private void WriteLogFile(string dst, string content)
+        {
+            //creazione file
+            var fileWriter = File.CreateText(dst);
+
+            //salvataggio informazioni
+            fileWriter.WriteLine(content);
+            fileWriter.Flush();
+
+            //dispose
+            fileWriter.Dispose();            
+        }
+        
+        private void SaveNormalLogs(DirectoryInfo folder)
+        {
+            //headers per i file
+            var summary = $"Steps_Num Coverage% AvgMultiplicity Duration Xs Ys Xe Ye Xt Yt Timeout{Environment.NewLine}";
+            var riskH = $"Risk{Environment.NewLine}";
+
+            //percorso file
+            var summaryPath = Path.Combine(folder.FullName, "summary.txt");
+            var riskHistPath = Path.Combine(folder.FullName, "riskHistory.txt");
+
+            //generazione contenuti
+            //summary
+            var startX = positionHist[0].X;
+            var startY = positionHist[0].Y;
+            var endX = positionHist.Last().X;
+            var endY = positionHist.Last().Y;
+            var tgtX = _env._realTarget.X;
+            var tgtY = _env._realTarget.Y;
+
+            summary += $"{searchSteps} " +
+                $"{coverage} " +
+                $"{avgMultiplicity} " +
+                $"{searchDuration} " +
+                $"{startX} " +
+                $"{startY} " +
+                $"{endX} " +
+                $"{endY} " +
+                $"{tgtX} " +
+                $"{tgtY} " +
+                $"{timeout}";
+
+            //riskHistory
+            dangerHist.ForEach(x => riskH += $"{x}{Environment.NewLine}");
+
+            //salvataggio dei log su file
+            WriteLogFile(summaryPath, summary);
+            WriteLogFile(riskHistPath, riskH);
         }
 
         private void SaveVerbose(DirectoryInfo folder)
         {
-            //cartella log
-            var logFolder = folder;
+            //headers dei file            
+            var positionH = $"Xp Yp{Environment.NewLine}";
+            var goalH = $"Xg Yg{Environment.NewLine}";
 
-            //file log posterior            
-            //string p = $"PosteriorHist[{positionHist.Count}]{Environment.NewLine}";
-            //posteriorHist.ForEach(x => 
-            //{
-            //    string post = string.Empty;
-            //    foreach (var item in x)
-            //    {
-            //        post += $"{item.ToString("N3")} ";
-            //    }
+            //percorso file            
+            var positionHPath = Path.Combine(folder.FullName, "positionHistory.txt");
+            var goalHPath = Path.Combine(folder.FullName, "goalHistory.txt");
 
-            //    p += post;
-            //});
-
-            //File.WriteAllText(Path.Combine(logFolder.FullName, "PosteriorHist.txt"), p);
-
-            //file log position
-            string pos = $"PositionHist{Environment.NewLine}" +
-                $"X Y{Environment.NewLine}";
-            positionHist.ForEach(x => pos += $"{x.X} {x.Y}{Environment.NewLine}");
-
-            File.WriteAllText(Path.Combine(logFolder.FullName, "PositionHist.txt"), pos);
-
-            //file log goal
-            string g = $"GoalHist{Environment.NewLine}" +
-                $"X Y{Environment.NewLine}";
-            goalSelectedHist.ForEach(x => g += $"{x.X} {x.Y}{Environment.NewLine}");
-
-            File.WriteAllText(Path.Combine(logFolder.FullName, "GoalHist.txt"), g);
-        }
-
-        private void CreateNonVerboseFiles(DirectoryInfo folder)
-        {
-            //cartella log
-            var logFolder = folder;
-
-            //genero files vuoti per i log
-            File.WriteAllText(Path.Combine(logFolder.FullName, "SearchPositions.txt"), $"label X Y{Environment.NewLine}");
-            File.WriteAllText(Path.Combine(logFolder.FullName, "SearchSteps.txt"), $"SearchSteps{Environment.NewLine}");
-            File.WriteAllText(Path.Combine(logFolder.FullName, "SearchDuration.txt"), $"SearchDuration{Environment.NewLine}");
-            File.WriteAllText(Path.Combine(logFolder.FullName, "Coverage.txt"), $"Coverage%{Environment.NewLine}");
-            File.WriteAllText(Path.Combine(logFolder.FullName, "AvgMultiplicity.txt"), $"AvgMultiplicity{Environment.NewLine}");
-            File.WriteAllText(Path.Combine(logFolder.FullName, "DangerHist.txt"), $"Danger{Environment.NewLine}");
-
-        }
-
-        private void SaveNonVerbose(DirectoryInfo folder)
-        {
-            var logFolder = folder;
-
-            var p = $"Start {_missionResult.Route[0].X} {_missionResult.Route[0].Y}{Environment.NewLine}" +
-                $"End {_missionResult.Route.Last().X} {_missionResult.Route.Last().Y}{Environment.NewLine}" +
-                $"Target {_env._realTarget.X} {_env._realTarget.Y} {Environment.NewLine}";
-            File.AppendAllText(Path.Combine(logFolder.FullName, "SearchPositions.txt"), p);
-
-            var s = $"{searchSteps}{Environment.NewLine}";
-            File.AppendAllText(Path.Combine(logFolder.FullName, "SearchSteps.txt"), s);
-
-            var t = $"{searchDuration}{Environment.NewLine}";
-            File.AppendAllText(Path.Combine(logFolder.FullName, "SearchDuration.txt"), t);
-
-            //file log coverage
-            var c = $"{coverage}{Environment.NewLine}";
-            File.AppendAllText(Path.Combine(logFolder.FullName, "Coverage.txt"), c);
-
-            //file log multiplicity
-            var m = $"{avgMultiplicity}{Environment.NewLine}";
-            File.AppendAllText(Path.Combine(logFolder.FullName, "AvgMultiplicity.txt"), m);
-
-            //log timeout
-            var tout = "Timeout: " + timeout.ToString() + Environment.NewLine;
-            if (timeout == true)
+            //generazione contenuti
+            
+            //position
+            foreach (var e in positionHist)
             {
-                File.WriteAllText(Path.Combine(logFolder.FullName, "Timeout.txt"), timeout.ToString());
+                positionH += $"{e.X} {e.Y}{Environment.NewLine}";
             }
 
-            string i = p + "steps: " + s + "time: " + t + "coverage: " + c + "multeplicity: " + m + tout;
-            File.WriteAllText(Path.Combine(logFolder.FullName, "SearchIndexes.txt"), i);
+            //goals
+            foreach (var e in goalSelectedHist)
+            {
+                goalH += $"{e.X} {e.Y}{Environment.NewLine}";
+            }
 
-
-            //file log risk
-            string r = string.Empty;
-            dangerHist.ForEach(x => r += $"{x}{Environment.NewLine}");
-            File.AppendAllText(Path.Combine(logFolder.FullName, "DangerHist.txt"), r);
+            //salvataggio file
+            WriteLogFile(positionHPath, positionH);
+            WriteLogFile(goalHPath, goalH);            
         }
     }
 }
