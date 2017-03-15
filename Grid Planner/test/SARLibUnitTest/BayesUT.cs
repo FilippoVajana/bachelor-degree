@@ -59,7 +59,7 @@ namespace SARLibUnitTest
             VIEWER = new SARViewer();
             FILTER = new BayesEngine.BayesFilter(FILTER_ALFA, FILTER_BETA);            
         }        
-
+                
         [TestMethod]
         public void FilterPoint_SenseTrue()
         {
@@ -110,7 +110,7 @@ namespace SARLibUnitTest
 
             //debug pre
             var gridConfStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
-
+            var gridDangStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Danger);
             var sensePoint = GRID.GetPoint(0, 3);
             var updateGrid = FILTER.UpdateEnvironmentConfidence(GRID, sensePoint, 1);
 

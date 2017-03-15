@@ -137,6 +137,157 @@ namespace SARLib.SARPlanner
         }
     }
 
+    public class SARUtilityFunction_Test_NoDistance : IUtilityFunction
+    {
+        int _radius = 1;
+        double _dExp;
+        double _cExp;
+        Func<IPoint, IPoint, double> manhattan_distance = delegate (IPoint a, IPoint b)
+        {
+            var distance = Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y);
+            return distance;
+        };
+
+        public SARUtilityFunction_Test_NoDistance(int evaluationRadius, double dangerExp, double confidenceExp)
+        {
+            _radius = evaluationRadius;
+            _dExp = dangerExp;
+            _cExp = confidenceExp;
+        }
+
+        Func<SARGrid, SARPoint, int, HashSet<SARPoint>> get_points_in_area = delegate (SARGrid env, SARPoint center, int radius)
+        {
+            var points = new HashSet<SARPoint> { center };
+
+            while (radius > 0)
+            {
+                var border = new List<SARPoint>();
+                foreach (var p in points)
+                {
+                    border.AddRange(env.GetNeighbors(p));
+                }
+
+                border.ForEach(x => points.Add(x));
+                radius--;
+            }
+
+            return points;
+        };
+
+        //modificare rendendo parametrico rispetto alla formula per il calcolo della utilità
+        public double ComputeUtility(SARPoint point, SARPoint currentPos, SARGrid environment)
+        {
+            if (currentPos.X == point.X && currentPos.Y == point.Y || point.Type == SARPoint.PointTypes.Obstacle)
+            {
+                return 0;
+            }
+
+            //Creazione set per i nodi considerati nella valutazione
+            HashSet<SARPoint> evalNodes = get_points_in_area(environment, point, _radius);
+
+            //calcolo parametri funzione di utilità
+            double DR = 0;
+            double CR = 0;
+            int Area = (int)Math.Sqrt(evalNodes.Count);
+            double L = manhattan_distance(currentPos, point);
+
+            foreach (var node in evalNodes)
+            {
+                DR += node.Danger;
+                CR += node.Confidence;
+            }
+
+            DR = DR / Area;
+            CR = Math.Pow(CR / Area, _cExp);
+
+            //double utility = 0;
+            double utility = CR * (Math.Pow(1 + 1 / (DR), _dExp));
+
+            //Debug
+            if ((point.X == 11 || point.X == 10) && point.Y > 22 && currentPos.Y > 22)
+            {
+                var str = string.Empty;
+            }
+
+            //Controllo valore di ritorno
+            if (double.IsInfinity(utility) || double.IsNaN(utility))
+            {
+                return 0;
+            }
+            else
+            {
+                return utility;
+            }
+            //return (!double.IsNaN(utility))? utility : 0;
+        }
+    }
+
+    public class SARUtilityFunction_Test_NoArea : IUtilityFunction
+    {
+        int _radius = 1;
+        double _dExp;
+        double _cExp;
+        Func<IPoint, IPoint, double> manhattan_distance = delegate (IPoint a, IPoint b)
+        {
+            var distance = Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y);
+            return distance;
+        };
+
+        public SARUtilityFunction_Test_NoArea(int evaluationRadius, double dangerExp, double confidenceExp)
+        {
+            _radius = evaluationRadius;
+            _dExp = dangerExp;
+            _cExp = confidenceExp;
+        }
+
+        Func<SARGrid, SARPoint, int, HashSet<SARPoint>> get_points_in_area = delegate (SARGrid env, SARPoint center, int radius)
+        {
+            var points = new HashSet<SARPoint> { center };
+
+            while (radius > 0)
+            {
+                var border = new List<SARPoint>();
+                foreach (var p in points)
+                {
+                    border.AddRange(env.GetNeighbors(p));
+                }
+
+                border.ForEach(x => points.Add(x));
+                radius--;
+            }
+
+            return points;
+        };
+
+        //modificare rendendo parametrico rispetto alla formula per il calcolo della utilità
+        public double ComputeUtility(SARPoint point, SARPoint currentPos, SARGrid environment)
+        {
+            if (point == currentPos)
+            {
+                return 0;
+            }
+            else
+            {
+                var maxL = environment._numCol + environment._numRow;
+                var minL = 1;
+                var dNorm = (1 - (maxL - environment.Distance(point, currentPos)) / (maxL - minL));
+
+                var pExp = Math.Pow(point.Confidence, _cExp);
+                var rExp = Math.Pow(point.Danger, _dExp);
+
+
+                var utility = pExp * (1 / ((1 + rExp) * (1 + dNorm)));
+
+                if (double.IsNaN(utility) /*||double.IsInfinity(utility)*/)
+                {
+                    return 0;
+                }
+                else
+                    return utility;
+            }
+            
+        }
+    }
     #endregion
 
     #region Selezione Goal
@@ -234,13 +385,16 @@ namespace SARLib.SARPlanner
             return LOGGER;
         }
 
-        public ISARMission GenerateMission(object cancToken)
+        public ISARMission GenerateMission(object simCD)
         {
+            Console.WriteLine($"[{DateTime.Now.ToLocalTime()}] {LOGGER?.instanceID} STARTED [{Environment.CurrentManagedThreadId}]");
+
             //token cancellazione simulazione
-            var cancellationToken = (CancellationToken)cancToken;
+            //var cancellationToken = (CancellationToken)cancToken;
+            var simCountdown = ((TimeSpan) simCD).Ticks;
 
             //LOG
-            LOGGER?.LogMissionStart();
+            //LOGGER?.LogMissionStart();
             //
 
             //imposto punto critici
@@ -281,27 +435,25 @@ namespace SARLib.SARPlanner
             var currentGoal = selector.SelectGoal(currentPos);
 
             //ciclo generazione 
-            while (cancellationToken.IsCancellationRequested == false)
+            while (simCountdown > 0)
             {
+                //contatore durata esecuzione ciclo
+                var stopWatch = Stopwatch.StartNew();
+
+
                 //VERIFICA RAGGIUNGIMENTO TARGET
                 if ((currentPos.X == targetPos.X && currentPos.Y == targetPos.Y) && (currentGoal.X == targetPos.X && currentGoal.Y == targetPos.Y))
                 {
                     break;
                 }              
                 
+
                 //SELEZIONE GOAL                
                 currentGoal = selector.SelectGoal(currentPos);
                 mission.Goals.Add(currentGoal);
                 //LOG  
                 LOGGER?.LogGoal(currentGoal);
-                //selectedGoals.Add(currentGoal);               
-
-                //Debug
-                //if (currentPos.X == targetPos.X && currentPos.Y == targetPos.Y)
-                //{
-                //    int a = 0;
-                //}
-
+                        
 
                 //PIANIFICAZIONE PERCORSO                
                 var currentPlan = planner.ComputeRoute(currentPos, currentGoal);
@@ -310,21 +462,24 @@ namespace SARLib.SARPlanner
                 if (currentPlan.Count == 0)
                 {
                     //LOG
-                    LOGGER?.LogMissionEnd();
+                    //LOGGER?.LogMissionEnd();
                     LOGGER?.LogMissionResult(mission);
                     //
                     return mission;
                 }
                 //Debug
-                Debug.WriteLine($"PLAN: ({currentPlan.First().X},{currentPlan.First().Y})-({currentPlan.Last().X},{currentPlan.Last().Y})");
+                //Debug.WriteLine($"PLAN: ({currentPlan.First().X},{currentPlan.First().Y})-({currentPlan.Last().X},{currentPlan.Last().Y})");
 
                 //ESECUZIONE STEP PERCORSO                
                 currentPos = runner.ExecutePlan(currentPlan);
+
+
                 //LOG
                 LOGGER?.LogPosition(currentPos);
                 LOGGER?.LogDanger((decimal) currentPos.Danger);
                 //
                 //dangerLevelsHistory.Add(currentPos.Danger); 
+
 
                 //AGGIORNAMENTO ROUTE MISSIONE
                 mission.Route.Add(currentPos);
@@ -333,19 +488,35 @@ namespace SARLib.SARPlanner
                 _environment = updater.UpdateEnvironmentConfidence(_environment, currentPos);
                 //LOG
                 LOGGER?.LogPosterior(_environment);
+
+                //aggiornamento contatore durata simulazione
+                stopWatch.Stop();
+
+                var cicleExecTime = stopWatch.ElapsedTicks;
+                simCountdown -= cicleExecTime;
+                //Debug
+                //Debug.WriteLine(simCountdown.TotalSeconds);
+                
+                //LOG
+                LOGGER?.LogCicleExecutionTime(cicleExecTime);                
             }
 
             //LOG
-            LOGGER?.LogMissionEnd();
+            //LOGGER?.LogMissionEnd();
             LOGGER?.LogMissionResult(mission);
-            if(cancellationToken.IsCancellationRequested == true)
+            if (simCountdown <= 0)
             {
-                //Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"[{DateTime.Now.ToUniversalTime()}] {LOGGER?.instanceID} TIMEOUT");
-                //Console.ForegroundColor = ConsoleColor.Gray;
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"[{DateTime.Now.ToUniversalTime()}] {LOGGER?.instanceID} TIMEOUT [{Environment.CurrentManagedThreadId}]");
+                Console.ForegroundColor = ConsoleColor.Gray;
                 LOGGER?.LogMissionTimeout();
             }
-            
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"[{DateTime.Now.ToUniversalTime()}] {LOGGER?.instanceID} STOPPED [{Environment.CurrentManagedThreadId}]");
+                Console.ForegroundColor = ConsoleColor.Gray;
+            }
             //
             return mission;
         }
@@ -356,7 +527,7 @@ namespace SARLib.SARPlanner
     /// Selezionatore per posizione candidata a goal
     /// in base alla mappa dei valori di utilità
     /// </summary>
-    class GoalSelector
+    public class GoalSelector
     {
         private SARGrid _env;
         private IUtilityFunction _util;
@@ -390,7 +561,7 @@ namespace SARLib.SARPlanner
             return goal;
         }
 
-        private Dictionary<SARPoint, double> BuildUtilityMap(SARPoint currentPos)
+        public Dictionary<SARPoint, double> BuildUtilityMap(SARPoint currentPos)
         {
             Dictionary<SARPoint, double> map = new Dictionary<SARPoint, double>(_env._grid.Length);
 

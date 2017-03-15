@@ -21,19 +21,14 @@ namespace SARSimulator
         string LOGS_DIR = null;
         public static string RUN_LOG_DIR = null;
         public static bool VERBOSE_LOG = false;
-        public static Dictionary<int, TimeSpan> SIM_MAX_DURATION =
-            new Dictionary<int, TimeSpan>()
-            {
-                {10, TimeSpan.FromSeconds(10) },
-                {25, TimeSpan.FromSeconds(60) },
-                {50, TimeSpan.FromSeconds(240) }
-            };
+        public static Dictionary<int, TimeSpan> SIM_MAX_DURATION = null;
+            
 
         //Campi di classe
         public List<string> EnvPaths { get; set; }
         
 
-        public MissionSimulator(string envsDir, int instanceMulteplicity, string logsDir, bool verboseLogging)
+        public MissionSimulator(string envsDir, int instanceMulteplicity, string logsDir, bool verboseLogging, int maxDuration)
         {
             //inizializzo
             ENVIRONMENTS_DIR = envsDir;
@@ -46,6 +41,14 @@ namespace SARSimulator
 
             VERBOSE_LOG = verboseLogging;
 
+            //inizializzo mappa per durate istanza
+            SIM_MAX_DURATION = new Dictionary<int, TimeSpan>()
+            {
+                {10, TimeSpan.FromSeconds(maxDuration) },
+                {25, TimeSpan.FromSeconds(maxDuration) },
+                {50, TimeSpan.FromSeconds(maxDuration) }
+            };
+
             //ottengo lista file ambienti di ricerca
             var envFiles = Directory.GetFiles(ENVIRONMENTS_DIR, "*.json", SearchOption.TopDirectoryOnly);
 
@@ -55,28 +58,36 @@ namespace SARSimulator
 
             //CONSOLE
             Console.WriteLine("Loaded Environment Files:");
-            EnvPaths.ForEach(x => Console.WriteLine(x));
-
-            //avvio simulazione
-            RunSimulation();
+            EnvPaths.ForEach(x => Console.WriteLine(x));            
         }
 
+        public void StartSimulation()
+        {
+            //avvio simulazione
+            var instancePool = RunSimulationPreparation();
 
-        private void RunSimulation()
+            //avvio le istanze
+            var worker = new SimulationWorkersManager(1, instancePool);
+            worker.RunSimulationInstances();
+
+            //estrazione sommario simulazione
+            SimulationLogger.ExtractSimulationResult(RUN_LOG_DIR);
+        }
+
+        private List<SimulationInstance> RunSimulationPreparation()
         {
             Console.WriteLine("BUILDING INSTANCES POOL . . .");
             //costruisco pool di istanze
             var instancePool = new SimulationInstancesPoolBuilder(EnvPaths, INSTANCE_MULT).BuildInstancesPool();
             Console.WriteLine($"BUILT {instancePool?.Count} INSTANCES");
 
-            //avvio le istanze
-            var worker = new SimulationWorkersManager(1, instancePool);
-            worker.RunWorks();
+            return instancePool;            
         }
         
         class SimulationWorkersManager
         {
-            int THREAD_NUM = 4;
+            //int THREAD_NUM = Environment.ProcessorCount;
+            int THREAD_NUM = 2;
 
             List<SimulationInstance> INSTANCE_POOL = new List<SimulationInstance>();
             Queue<SimulationInstance> INSTANCE_QUEUE = null;
@@ -88,7 +99,7 @@ namespace SARSimulator
                 INSTANCE_QUEUE = new Queue<SimulationInstance>();
             }
 
-            public void RunWorks()
+            public void RunSimulationInstances()
             {           
                 FillWorkingQueue();
 
@@ -106,6 +117,9 @@ namespace SARSimulator
                     $"THREADS: {THREAD_NUM}{Environment.NewLine}" +
                     $"TIME THRESHOLD: {tLimS}sec.[S]  {tLimM}sec.[M]  {tLimL}sec.[L] {Environment.NewLine}" +
                     $"MAX DURATION: {etaTot} sec. [{TimeSpan.FromSeconds(etaTot).TotalMinutes} min.]{Environment.NewLine}");
+                Console.WriteLine("Press Enter");
+                Console.ReadKey();
+
 
                 RunWorkingQueue();
 
@@ -121,12 +135,16 @@ namespace SARSimulator
             //elaborazione istanze
             private void RunWorkingQueue()
             {
-                var _simStart = DateTime.Now;
+                var instanceQueueLength = INSTANCE_QUEUE.Count;
+                var simStart = DateTime.Now;
+                var runningTask = new List<Task>();
+                //var runningTask = new Task[THREAD_NUM];
 
                 while (INSTANCE_QUEUE.Count > 0)
                 {
-                    var runningTask = new Task[THREAD_NUM];
-                    for (int i = 0; i < THREAD_NUM; i++)
+                    // var runningTask = new Task[THREAD_NUM];
+                    var rT = runningTask.Count;
+                    for (int i = 0; i < THREAD_NUM - rT; i++)
                     {                      
                         //creo task
                         var instance = INSTANCE_QUEUE.Dequeue();
@@ -134,22 +152,39 @@ namespace SARSimulator
                         var task = instance.RunInstanceAsync(SIM_MAX_DURATION[instance._env._numCol]);
 
                         //aggiungo alla coda di elaborazione
-                        runningTask[i] = task;                        
+                        //runningTask[i] = task;
+                        runningTask.Add(task);
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.WriteLine("RUNNING_TASK_QUEUE_LENGTH: " + runningTask.Count);
+                        Console.ForegroundColor = ConsoleColor.Gray;
+
+                        //Thread.Sleep(100);
                     }
 
                     //attendo completamento tasks
-                    Task.WaitAll(runningTask);
+                    int index = Task.WaitAny(runningTask.ToArray());
+                    runningTask.RemoveAt(index);
 
-                    //runningTask.RemoveRange(0, runningTask.Count);
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine("INSTANCE_QUEUE_LENGTH: " + INSTANCE_QUEUE.Count);
+                    Console.WriteLine("RUNNING_TASK_QUEUE_LENGTH: " + runningTask.Count);
+                    Console.ForegroundColor = ConsoleColor.Gray;
 
-                    //Console.ForegroundColor = ConsoleColor.Green;
-                    //Console.WriteLine("TASKS QUEUE: " + INSTANCE_QUEUE.Count);
-                    //Console.ForegroundColor = ConsoleColor.Gray;                   
-                    
+                    //Thread.Sleep(100);
                 }
 
-                var _simEnd = DateTime.Now;
-                Console.WriteLine($"SIMULATION DURATION: {_simEnd.Subtract(_simStart).TotalSeconds}");
+                Task.WaitAll(runningTask.ToArray(), (int)(runningTask.Count * SIM_MAX_DURATION[50].TotalMilliseconds));
+
+                var simEnd = DateTime.Now;
+                var simDuration = TimeSpan.FromTicks(simEnd.Ticks - simStart.Ticks);
+                Console.WriteLine($"SIMULATION DURATION: {simEnd.Subtract(simStart).TotalSeconds}");
+                //creazione file dettagli simulazione
+                var simDetails = "THREAD_NUM MAX_INSTANCE_DURATION SIM_DURATION SIM_INSTANCE_NUM" + Environment.NewLine;
+                simDetails += $"{THREAD_NUM} {SIM_MAX_DURATION[10]} {simDuration} {instanceQueueLength}";
+                var simDetailSW = File.CreateText(Path.Combine(RUN_LOG_DIR, "simulation_details.txt"));
+                simDetailSW.AutoFlush = true;
+                simDetailSW.WriteLine(simDetails);
+                simDetailSW.Dispose();
             }
         }
 
@@ -183,7 +218,8 @@ namespace SARSimulator
 
             //default
             _entryPoint = _env.GetPoint(0, 0);
-            _utilityFunc = new SARUtilityFunction(2, (1 - _riskParam), _riskParam);
+            //_utilityFunc = new SARUtilityFunction(2, (1 - _riskParam), _riskParam);
+            _utilityFunc = new SARUtilityFunction_Test_NoArea(0, (1 - _riskParam), _riskParam); //utilità modificata
             _costFunc = new SARCostFunction();
             _goalStrat = new SARGoalSelector();
 
@@ -202,23 +238,15 @@ namespace SARSimulator
             //inizializzo logger             
             var instanceLogger = planner.SetupLogger(this.ID, this.MID, MissionSimulator.RUN_LOG_DIR, MissionSimulator.VERBOSE_LOG);
 
-            //avvio simulazione
+            //Thread.Sleep(10);
+            //avvio simulazione   
             
-            Console.WriteLine($"[{DateTime.Now.ToUniversalTime()}] {this.ID} STARTED");
-            var cTS = new CancellationTokenSource(maxDuration);
-            var cT = cTS.Token;
-            //var task = new Task()
-            var simTaskResult = await Task.Run(() => { return planner.GenerateMission(cT); });
-                        
-            if (cT.IsCancellationRequested == false)
-            {
-                Console.WriteLine($"[{DateTime.Now.ToUniversalTime()}] {this.ID} STOPPED"); 
-            }            
+            var simTaskResult = await Task.Run(() => { return planner.GenerateMission(maxDuration); });
 
-            //salvataggio logs
-            instanceLogger.SaveToFile();
+            //Thread.Sleep(100);
+            await Task.Run(() => { instanceLogger.SaveLogs(); });
 
-            cTS.Dispose();
+            Thread.Sleep(100);
 
             return simTaskResult;
         }
@@ -370,9 +398,9 @@ namespace SARSimulator
         };
         Dictionary<SimulationInstanceSchema.RiskPropensity, double> _riskMap = new Dictionary<SimulationInstanceSchema.RiskPropensity, double>()
         {
-            {SimulationInstanceSchema.RiskPropensity.Safe, 0.8 },
+            {SimulationInstanceSchema.RiskPropensity.Safe, 0.2 },
             {SimulationInstanceSchema.RiskPropensity.Normal, 0.5 },
-            {SimulationInstanceSchema.RiskPropensity.Risk, 0.2 }
+            {SimulationInstanceSchema.RiskPropensity.Risk, 0.8 }
         };
 
         #endregion
