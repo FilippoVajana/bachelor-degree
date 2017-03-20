@@ -80,7 +80,7 @@ namespace SARLib.Toolbox
                 //posterior
                 foreach (var e in env._grid)
                 {
-                    posteriorSW.Write($"{e.Confidence.ToString("N1")} ");
+                    posteriorSW.Write($"{e.Confidence.ToString("N3")} ");
                 }
                 posteriorSW.WriteLine();                
             }
