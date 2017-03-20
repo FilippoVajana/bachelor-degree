@@ -23,13 +23,20 @@ namespace GridPlanner
             Directory.CreateDirectory(APP_ENVS_ROOT);
             Directory.CreateDirectory(APP_LOGS_ROOT);
 
+
+            Console.WriteLine("URBAN SEARCH AND RESCUE SIMULATOR\n\n");
+
             //input molteplicità
-            Console.WriteLine("INSERT MULTEPLICITY:" + Environment.NewLine);
+            Console.WriteLine("Insert instance multiplicity: ");
             var mult = Console.ReadLine();
+
+            //input durata massima istanza
+            Console.WriteLine("Insert instance maximum running time (seconds): ");
+            int maxTime = int.Parse(Console.ReadLine());
 
             //input verbose
             bool verbose = false;
-            Console.WriteLine($"VERBOSE MODE? [y/n]");
+            Console.WriteLine($"Logging VERBOSE? [y/n]");
             var v = Console.ReadLine();
             if (v == "y")
             {
@@ -37,8 +44,8 @@ namespace GridPlanner
             }
             
             //SIMULATOR
-            SARSimulator.MissionSimulator SIMULATOR = new SARSimulator.MissionSimulator(APP_ENVS_ROOT, int.Parse(mult), APP_LOGS_ROOT, verbose);
-            
+            SARSimulator.MissionSimulator sarSimulator = new SARSimulator.MissionSimulator(APP_ENVS_ROOT, int.Parse(mult), APP_LOGS_ROOT, verbose, maxTime);
+            sarSimulator.StartSimulation();
 
             Console.Write("\nPress Enter to exit");
             Console.ReadKey();

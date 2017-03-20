@@ -1,0 +1,2 @@
+Steps_Num Coverage% AvgMultiplicity Duration Xs Ys Xe Ye Xt Yt Timeout M_Size Prior_Type Danger_Type Risk_Coeff Danger_Threshold
+2102 21 1032 00:00:10.0037800 0 0 9 8 0 0 True Small KDistributed KDistributed Safe 0,8 

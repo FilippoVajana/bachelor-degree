@@ -22,10 +22,10 @@
     <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\lib\SARLib\SARLib.csproj" />
-  </ItemGroup>
-  <ItemGroup>
     <Folder Include="Data\Environments\hidden\" />
     <Folder Include="Data\Logs\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\lib\SARLib\SARLib.csproj" />
   </ItemGroup>
 </Project>

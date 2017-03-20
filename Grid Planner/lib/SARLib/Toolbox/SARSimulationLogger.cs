@@ -10,54 +10,64 @@ namespace SARLib.Toolbox
 {
     public class SimulationLogger
     {
-        string _logDirectory;
-        bool _verboseMode;
+        #region Parametri
+        string runLogFolder;
+        bool verbose;
         public string instanceID;
         public int instanceMID;
-        SARGrid _env;
-        SARMission.SARMission _missionResult;
+        SARGrid environment;
+        SARMission.SARMission missionResult;
 
         //log temporali
-        DateTime _startTime;
-        DateTime _endTime;
+        long runDurationTicks;
+        //DateTime _startTime;
+        //DateTime _endTime;
 
-        //verbose
-        //List<double[,]> posteriorHist = new List<double[,]>();
+        //verbose        
         string posteriorHPath = string.Empty;
-        StreamWriter posteriorFile = null;
+        StreamWriter posteriorSW = null;
         List<SARPoint> positionHist = new List<SARPoint>();
         List<SARPoint> goalSelectedHist = new List<SARPoint>();
 
         //non verbose
         int searchSteps;//f
-        TimeSpan searchDuration;//f
+        //TimeSpan searchDuration;//f
         double coverage;//f
         int avgMultiplicity;//f
-        List<decimal> dangerHist = new List<decimal>();
+        StreamWriter riskSW = null;
+        bool missionSuccess = false;
 
         //analisi rapida
-        bool timeout = false;
+        bool timeout = false; 
+        #endregion
 
         public SimulationLogger(string instanceId, int instanceMID, SARGrid environment, string logDir, bool verbose)
         {
             this.instanceID = instanceId;
             this.instanceMID = instanceMID;
-            _env = environment;
-            _logDirectory = logDir;
-            _verboseMode = verbose;
+            this.environment = environment;
+            this.verbose = verbose;
 
-            if(_verboseMode)
-            {
-                //cartella log            
-                var logFolder = Directory.CreateDirectory(Path.Combine(_logDirectory, instanceID, instanceMID.ToString()));
+            //creazione folder per i log della run
+            runLogFolder = Directory.CreateDirectory(Path.Combine(logDir, instanceID, instanceMID.ToString())).FullName;
+            
+            //salvataggio ambiente iniziale            
+            Saver.SaveToJsonFile(this.environment, runLogFolder, "env");
 
+            //creazione file per il log di dangerHistory
+            var riskHeader = "Danger";
+            riskSW = File.CreateText(Path.Combine(runLogFolder, "riskHistory.txt"));
+            riskSW.WriteLine(riskHeader);
+                       
+            //creazione file per il log di posteriorHistory
+            if(this.verbose)
+            {                
                 //header
-                var posteriorH = $"Rows{_env._numRow}, Cols{_env._numCol}, [Matlab] reshape(P,[{_env._numRow},{_env._numCol}]){Environment.NewLine}";
+                var posteriorHeader = $"Rows{this.environment._numRow}, Cols{this.environment._numCol}, [Matlab] reshape(P,[{this.environment._numRow},{this.environment._numCol}]){Environment.NewLine}";
 
-                //file
-                posteriorHPath = Path.Combine(logFolder.FullName, "posteriorHistory.txt");
-                posteriorFile = File.CreateText(posteriorHPath);
-                posteriorFile.WriteLine(posteriorH);
+                //file                
+                posteriorSW = File.CreateText(Path.Combine(runLogFolder, "posteriorHistory.txt"));
+                posteriorSW.WriteLine(posteriorHeader);
             }
         }
 
@@ -65,14 +75,14 @@ namespace SARLib.Toolbox
         public void LogPosterior(SARGrid env)
         {      
             //salvataggio del file
-            if(_verboseMode)
+            if(verbose)
             {
                 //posterior
                 foreach (var e in env._grid)
                 {
-                    posteriorFile.Write($"{e.Confidence.ToString("N3")} ");
+                    posteriorSW.Write($"{e.Confidence.ToString("N1")} ");
                 }
-                posteriorFile.WriteLine();                
+                posteriorSW.WriteLine();                
             }
         }
         public void LogPosition(SARPoint positionSnap)
@@ -85,42 +95,85 @@ namespace SARLib.Toolbox
         }
         public void LogDanger(decimal dangerSnap)
         {
-            dangerHist.Add(dangerSnap);
+            riskSW.WriteLine(dangerSnap);
         }
 
         public void LogMissionResult(SARMission.SARMission mission)
         {
-            _missionResult = mission;
+            missionResult = mission;
             ExtractRunResult();
         }
 
-        public void LogMissionStart()
+        public void LogCicleExecutionTime(long cicleExecTime)
         {
-            _startTime = DateTime.Now;
+            runDurationTicks += cicleExecTime;
         }
-        public void LogMissionEnd()
-        {
-            _endTime = DateTime.Now;
-        }
+        
         public void LogMissionTimeout()
         {
             timeout = true;
         }
 
+        /// <summary>
+        /// Estrae i dati per la singola run
+        /// </summary>
         private void ExtractRunResult()
         {
-            searchSteps = _missionResult.Route.Count;
-            searchDuration = _endTime.Subtract(_startTime);
+            searchSteps = missionResult.Route.Count;
+            //searchDuration = runDuration;
             coverage = GetCoverage();
             avgMultiplicity = GetMultiplicity();
+
+            //controllo successo missione            
+            if (missionResult.Route.Last() == environment._realTarget)
+            {
+                missionSuccess = true;
+            }
         }
+        
+        /// <summary>
+        /// Estrae il sommario della simulazione
+        /// </summary>
+        public static void ExtractSimulationResult(string simulationLogFolder)
+        {
+            //creo file sommario
+            var simSummary = File.CreateText(Path.Combine(simulationLogFolder, "simulation_summary.txt"));//file
+            var simSummaryHeader = "Steps_Num Coverage% AvgMultiplicity Duration Success Xs Ys Xe Ye Xt Yt Timeout M_Size Prior_Type Danger_Type Risk_Coeff Danger_Threshold";//header provvisiorio
+            simSummary.WriteLine(simSummaryHeader);
+
+            //lettura file summary per le singole istanze di simulazione
+            var summaryFiles = Directory.GetFiles(simulationLogFolder, "summary.txt", SearchOption.AllDirectories);
+            Console.WriteLine($"Generating Simulation Summary . . .{Environment.NewLine}" +
+                $"Found {summaryFiles.Count()} Files");
+
+            //scrittura dati
+            foreach (var file in summaryFiles)
+            {
+                try
+                {
+                    //leggo file
+                    var fileLines = File.ReadAllLines(file);
+
+                    //salvo valori
+                    simSummary.WriteLine(fileLines[1]);
+                }
+                catch (Exception w_ex)
+                {
+                    continue;
+                }
+            }
+
+            simSummary.Flush();
+            simSummary.Dispose();
+        }
+
         private int GetMultiplicity()
         {
             var mult = new List<int>();
 
-            foreach (var p in _missionResult.Route)
+            foreach (var p in missionResult.Route)
             {
-                var m = _missionResult.Route.Where(x => x == p).Count();
+                var m = missionResult.Route.Where(x => x == p).Count();
                 mult.Add(m);
             }
 
@@ -129,9 +182,9 @@ namespace SARLib.Toolbox
         private double GetCoverage()
         {
             var visited = new HashSet<SARPoint>();
-            _missionResult.Route.ForEach(x => visited.Add(x));
+            missionResult.Route.ForEach(x => visited.Add(x));
 
-            var envArea = _env._numCol * _env._numRow;
+            var envArea = environment._numCol * environment._numRow;
 
             double cov = (double)visited.Count / (double)envArea;
 
@@ -142,22 +195,23 @@ namespace SARLib.Toolbox
 
         public void SaveLogs()
         {
-            Console.WriteLine($"SAVING LOGS FOR INSTANCE {instanceID}({instanceMID})");
+            Console.WriteLine($"[{DateTime.Now.ToLocalTime()}] SAVING LOGS FOR INSTANCE {instanceID}({instanceMID})");
 
             //cartella log            
-            var logFolder = Directory.CreateDirectory(Path.Combine(_logDirectory, instanceID, instanceMID.ToString()));
+            //var logFolder = Directory.CreateDirectory(Path.Combine(_logDirectory, instanceID, instanceMID.ToString()));
 
             //salvataggio files non verbose
-            SaveNormalLogs(logFolder);
+            SaveNormalLogs();
 
             //salvataggio files verbose
-            if (_verboseMode)
+            if (verbose)
             {
-                SaveVerbose(logFolder);
+                SaveVerbose();
             }
 
-            posteriorFile.Dispose();
-            Console.WriteLine($"SAVED LOGS FOR INSTANCE {instanceID}({instanceMID})");
+            posteriorSW?.Dispose();
+            riskSW?.Dispose();
+            Console.WriteLine($"[{DateTime.Now.ToLocalTime()}] SAVED LOGS FOR INSTANCE {instanceID}({instanceMID})");            
         }
 
         private void WriteLogFile(string dst, string content)
@@ -173,15 +227,16 @@ namespace SARLib.Toolbox
             fileWriter.Dispose();            
         }
         
-        private void SaveNormalLogs(DirectoryInfo folder)
+        private void SaveNormalLogs()
         {
             //headers per i file
-            var summary = $"Steps_Num Coverage% AvgMultiplicity Duration Xs Ys Xe Ye Xt Yt Timeout{Environment.NewLine}";
-            var riskH = $"Risk{Environment.NewLine}";
+            var summary = $"Steps_Num Coverage% AvgMultiplicity Duration Success Xs Ys Xe Ye Xt Yt Timeout M_Size Prior_Type Danger_Type Risk_Coeff Danger_Threshold{Environment.NewLine}";
+            //var riskH = $"Risk{Environment.NewLine}";
 
             //percorso file
-            var summaryPath = Path.Combine(folder.FullName, "summary.txt");
-            var riskHistPath = Path.Combine(folder.FullName, "riskHistory.txt");
+            var summaryPath = Path.Combine(runLogFolder, "summary.txt");
+            //var riskHistPath = Path.Combine(folder.FullName, "riskHistory.txt");
+            //var startEnvPath = Path.Combine(folder.FullName, "environment.json");
 
             //generazione contenuti
             //summary
@@ -189,38 +244,46 @@ namespace SARLib.Toolbox
             var startY = positionHist[0].Y;
             var endX = positionHist.Last().X;
             var endY = positionHist.Last().Y;
-            var tgtX = _env._realTarget.X;
-            var tgtY = _env._realTarget.Y;
-
+            var tgtX = environment._realTarget.X;
+            var tgtY = environment._realTarget.Y;
+            var instanceIDComponents = instanceID.Split('_');
+            var runDuration = TimeSpan.FromTicks(runDurationTicks).TotalSeconds;
             summary += $"{searchSteps} " +
                 $"{coverage} " +
                 $"{avgMultiplicity} " +
-                $"{searchDuration} " +
+                $"{runDuration} " +
+                $"{missionSuccess} " +
                 $"{startX} " +
                 $"{startY} " +
                 $"{endX} " +
                 $"{endY} " +
                 $"{tgtX} " +
                 $"{tgtY} " +
-                $"{timeout}";
+                $"{timeout} " +
+                $"{instanceIDComponents[1]} " +
+                $"{instanceIDComponents[2]} " +
+                $"{instanceIDComponents[3]} " +
+                $"{instanceIDComponents[5]} " +
+                $"{instanceIDComponents[6]} ";
 
             //riskHistory
-            dangerHist.ForEach(x => riskH += $"{x}{Environment.NewLine}");
+            //dangerHist.ForEach(x => riskH += $"{x}{Environment.NewLine}");
+            
 
             //salvataggio dei log su file
             WriteLogFile(summaryPath, summary);
-            WriteLogFile(riskHistPath, riskH);
+            //WriteLogFile(riskHistPath, riskH);            
         }
 
-        private void SaveVerbose(DirectoryInfo folder)
+        private void SaveVerbose()
         {
             //headers dei file            
             var positionH = $"Xp Yp{Environment.NewLine}";
             var goalH = $"Xg Yg{Environment.NewLine}";
 
             //percorso file            
-            var positionHPath = Path.Combine(folder.FullName, "positionHistory.txt");
-            var goalHPath = Path.Combine(folder.FullName, "goalHistory.txt");
+            var positionHPath = Path.Combine(runLogFolder, "positionHistory.txt");
+            var goalHPath = Path.Combine(runLogFolder, "goalHistory.txt");
 
             //generazione contenuti
             
