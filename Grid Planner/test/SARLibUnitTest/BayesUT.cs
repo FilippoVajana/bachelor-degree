@@ -135,7 +135,7 @@ namespace SARLibUnitTest
             //debug pre
             var gridConfStr = VIEWER.DisplayProperty(GRID, SARViewer.SARPointAttributes.Confidence);
 
-            var sensePoint = GRID.GetPoint(0, 3);
+            var sensePoint = GRID.GetPoint(0, 0);
             var updateGrid = FILTER.UpdateEnvironmentConfidence(GRID, sensePoint, 0);
 
             //debug post

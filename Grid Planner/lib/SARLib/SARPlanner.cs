@@ -638,7 +638,7 @@ namespace SARLib.SARPlanner
     /// Updater per la distribuzione di probabilità del parametro Confidence
     /// nel'ambiente di ricerca
     /// </summary>
-    class EnvironmentUpdater
+    public class EnvironmentUpdater
     {
         Toolbox.BayesEngine.BayesFilter _bayesFilter;        
 
