@@ -30,10 +30,12 @@ namespace SARLib.Toolbox
         List<SARPoint> goalSelectedHist = new List<SARPoint>();
 
         //non verbose
-        int searchSteps;//f
-        //TimeSpan searchDuration;//f
+        int searchSteps;//f 
         double coverage;//f
         int avgMultiplicity;//f
+        decimal cumulativeRiskNorm;//f
+        decimal cumulativeRisk;//f
+        List<decimal> riskHist = new List<decimal>();
         StreamWriter riskSW = null;
         bool missionSuccess = false;
 
@@ -95,6 +97,7 @@ namespace SARLib.Toolbox
         }
         public void LogDanger(decimal dangerSnap)
         {
+            riskHist.Add(dangerSnap);
             riskSW.WriteLine(dangerSnap);
         }
 
@@ -119,10 +122,11 @@ namespace SARLib.Toolbox
         /// </summary>
         private void ExtractRunResult()
         {
-            searchSteps = missionResult.Route.Count;
-            //searchDuration = runDuration;
+            searchSteps = missionResult.Route.Count;            
             coverage = GetCoverage();
             avgMultiplicity = GetMultiplicity();
+            cumulativeRiskNorm = GetCumulativeRisk(searchSteps, riskHist);
+            cumulativeRisk = riskHist.Sum();
 
             //controllo successo missione            
             if (missionResult.Route.Last() == environment._realTarget)
@@ -130,7 +134,15 @@ namespace SARLib.Toolbox
                 missionSuccess = true;
             }
         }
-        
+
+        private decimal GetCumulativeRisk(int searchSteps, List<decimal> riskHist)
+        {
+            var maxR = searchSteps;
+            var cumulativeRisk = 1 - ((maxR - riskHist.Sum()) / maxR);
+
+            return cumulativeRisk;
+        }
+
         /// <summary>
         /// Estrae il sommario della simulazione
         /// </summary>
@@ -138,7 +150,7 @@ namespace SARLib.Toolbox
         {
             //creo file sommario
             var simSummary = File.CreateText(Path.Combine(simulationLogFolder, "simulation_summary.txt"));//file
-            var simSummaryHeader = "Steps_Num Coverage% AvgMultiplicity Duration Success Xs Ys Xe Ye Xt Yt Timeout M_Size Prior_Type Danger_Type Risk_Coeff Danger_Threshold";//header provvisiorio
+            var simSummaryHeader = "Steps_Num Coverage% AvgMultiplicity Duration Success Xs Ys Xe Ye Xt Yt Timeout M_Size Prior_Type Danger_Type Risk_Coeff Danger_Threshold Cumulative_Risk_Norm Cumulative_Risk";//header provvisiorio
             simSummary.WriteLine(simSummaryHeader);
 
             //lettura file summary per le singole istanze di simulazione
@@ -230,7 +242,7 @@ namespace SARLib.Toolbox
         private void SaveNormalLogs()
         {
             //headers per i file
-            var summary = $"Steps_Num Coverage% AvgMultiplicity Duration Success Xs Ys Xe Ye Xt Yt Timeout M_Size Prior_Type Danger_Type Risk_Coeff Danger_Threshold{Environment.NewLine}";
+            var summary = $"Steps_Num Coverage% AvgMultiplicity Duration Success Xs Ys Xe Ye Xt Yt Timeout M_Size Prior_Type Danger_Type Risk_Coeff Danger_Threshold Cumulative_Risk_Norm Cumulative_Risk{Environment.NewLine}";
             //var riskH = $"Risk{Environment.NewLine}";
 
             //percorso file
@@ -251,7 +263,7 @@ namespace SARLib.Toolbox
             summary += $"{searchSteps} " +
                 $"{coverage} " +
                 $"{avgMultiplicity} " +
-                $"{runDuration} " +
+                $"{runDuration.ToString("N6")} " +
                 $"{missionSuccess} " +
                 $"{startX} " +
                 $"{startY} " +
@@ -264,7 +276,9 @@ namespace SARLib.Toolbox
                 $"{instanceIDComponents[2]} " +
                 $"{instanceIDComponents[3]} " +
                 $"{instanceIDComponents[5]} " +
-                $"{instanceIDComponents[6]} ";
+                $"{instanceIDComponents[6]} " +
+                $"{cumulativeRiskNorm.ToString("N6")} " +
+                $"{cumulativeRisk.ToString("N6")}";
 
             //riskHistory
             //dangerHist.ForEach(x => riskH += $"{x}{Environment.NewLine}");

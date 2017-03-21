@@ -123,15 +123,15 @@ namespace GridPlannerUnitTest
             var viewerUtil = new SARViewer().DisplayMap(baseGrid, utilMap);
 
             //calcolo aggiornamento post Z=1
-            var sensePoint = baseGrid.GetPoint(0, 20);
+            var sensePoint = baseGrid.GetPoint(20, 8);
             var updater = new BayesEngine.BayesFilter(0.2, 0.2);
             var updateTrue = updater.UpdateEnvironmentConfidence(baseGrid, sensePoint, 1);
-            viewerConf = new SARViewer().DisplayProperty(updateTrue, SARViewer.SARPointAttributes.Confidence);
+            var viewerConfTrue = new SARViewer().DisplayProperty(updateTrue, SARViewer.SARPointAttributes.Confidence);
 
             //calcolo aggiornamento post Z=0
             baseGrid = new SARGrid(@"C:\Users\filip\Dropbox\Unimi\pianificazione\Grid Planner\GridPlannerUnitTest\Data\Logs\INSTANCE_Large_KDistributed_KDistributed_1_Normal_0,2.json");
             var updateFalse = updater.UpdateEnvironmentConfidence(baseGrid, sensePoint, 0);
-            viewerConf = new SARViewer().DisplayProperty(updateFalse, SARViewer.SARPointAttributes.Confidence);
+            var viewerConfFalse = new SARViewer().DisplayProperty(updateFalse, SARViewer.SARPointAttributes.Confidence);
         }
         
     }

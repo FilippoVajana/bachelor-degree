@@ -177,7 +177,7 @@ namespace SARSimulator
 
                 var simEnd = DateTime.Now;
                 var simDuration = TimeSpan.FromTicks(simEnd.Ticks - simStart.Ticks);
-                Console.WriteLine($"SIMULATION DURATION: {simEnd.Subtract(simStart).TotalSeconds}");
+                Console.WriteLine($"SIMULATION DURATION: {simEnd.Subtract(simStart).TotalMinutes}");
                 //creazione file dettagli simulazione
                 var simDetails = "THREAD_NUM MAX_INSTANCE_DURATION SIM_DURATION SIM_INSTANCE_NUM" + Environment.NewLine;
                 simDetails += $"{THREAD_NUM} {SIM_MAX_DURATION[10]} {simDuration} {instanceQueueLength}";
